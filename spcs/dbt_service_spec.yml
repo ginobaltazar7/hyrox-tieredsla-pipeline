@@ -7,7 +7,7 @@ SPORTS_ANALYTICS_DB.SILVER.dbt_silver_job
   spec:
     containers:
       - name: dbt-silver
-        image: your_org_registry/sports_analytics/dbt_core:latest
+        image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo
         command: ["dbt", "run", "--select", "silver", "--profiles-dir", "."]
     ';
 
@@ -18,6 +18,6 @@ CREATE OR REPLACE SERVICE SPORTS_ANALYTICS_DB.GOLD_MARKETING.dbt_gold_job
   spec:
     containers:
       - name: dbt-gold
-        image: your_org_registry/sports_analytics/dbt_core:latest
+        image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo
         command: ["dbt", "run", "--select", "gold", "--profiles-dir", "."]
     ';
