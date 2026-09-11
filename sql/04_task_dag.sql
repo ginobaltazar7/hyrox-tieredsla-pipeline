@@ -1,9 +1,20 @@
 -- Step 1: Ingest raw data via Snowpark Python procedure
 CREATE OR REPLACE TASK SPORTS_ANALYTICS_DB.RAW_BRONZE.task_step1_ingest
-  WAREHOUSE = 'WH_MARKETING_XS'
   SCHEDULE = '60 MINUTE'
 AS
-  CALL SPORTS_ANALYTICS_DB.RAW_BRONZE.sp_ingest_hyrox(8);
+  EXECUTE JOB SERVICE
+    IN COMPUTE POOL dbt_compute_pool
+    NAME = SPORTS_ANALYTICS_DB.RAW_BRONZE.ingest_job
+    FROM SPECIFICATION $$
+    spec:
+      containers:
+        - name: ingest-runner
+          image: /sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:latest
+          env:
+            HYROX_SEASON: "8"
+            MAX_ROWS: "5000"
+          command: ["python", "scripts/raw_ingest.py"]
+    $$;
 
 -- Step 2: Run dbt Silver Models via SPCS Job Task (Serverless)
 CREATE OR REPLACE TASK SPORTS_ANALYTICS_DB.SILVER.task_step2_dbt_silver
@@ -17,7 +28,7 @@ AS
       containers:
         - name: dbt-silver
           image: /sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:latest
-          command: ["dbt", "run", "--select", "silver", "--profiles-dir", "."]
+          command: ["sh", "-c", "dbt run --select silver --profiles-dir . && dbt test --select silver --profiles-dir ."]
     $$;
 
 -- Step 3: Run Snowpatrol WAP Audit Gate on dbt's Silver output
@@ -39,7 +50,7 @@ AS
       containers:
         - name: dbt-gold
           image: /sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:latest
-          command: ["dbt", "run", "--select", "gold", "--profiles-dir", "."]
+          command: ["sh", "-c", "dbt run --select gold --profiles-dir . && dbt test --select gold --profiles-dir ."]
     $$;
 
 -- Resume Task Chain

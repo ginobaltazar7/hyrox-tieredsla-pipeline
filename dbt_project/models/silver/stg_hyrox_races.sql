@@ -1,4 +1,11 @@
-{{ config(materialized='incremental') }}
+{{ 
+    config(
+        materialized='incremental',
+        unique_key=['athlete_id', 'season'],
+        incremental_strategy='merge'
+    ) 
+}}
+
 SELECT 
     athlete_id,
     name,
