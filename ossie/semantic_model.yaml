@@ -1,0 +1,25 @@
+YAML
+version: 0.2
+semantic_model:
+  name: hyrox_performance_model
+  description: "Apache Ossie definition mapped from dbt models for HYROX race analytics."
+  entities:
+    - name: athlete
+      type: primary
+      expr: athlete_id
+  dimensions:
+    - name: location
+      type: categorical
+      expr: location
+    - name: division
+      type: categorical
+      expr: division
+  metrics:
+    - name: total_finishes
+      type: simple
+      expr: athlete_id
+      agg: count
+    - name: average_total_time
+      type: simple
+      expr: total_time_minutes
+      agg: average

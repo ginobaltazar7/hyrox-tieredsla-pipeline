@@ -1,0 +1,7 @@
+version: 2
+sources:
+  - name: raw_bronze
+    database: SPORTS_ANALYTICS_DB
+    schema: RAW_BRONZE
+    tables:
+      - name: hyrox_raw_season_8

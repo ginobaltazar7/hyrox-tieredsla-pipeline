@@ -1,0 +1,23 @@
+name: 'sports_analytics'
+version: '1.0.0'
+config-version: 2
+
+profile: 'sports_analytics'
+
+model-paths: ["models"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  sports_analytics:
+    silver:
+      materialized: incremental
+      unique_key: ['athlete_id', 'race_id']
+    gold_marketing:
+      materialized: table
+    gold_finance:
+      materialized: snapshot
+      config:
+        target_schema: gold_finance
+        strategy: timestamp
+        updated_at: updated_at
