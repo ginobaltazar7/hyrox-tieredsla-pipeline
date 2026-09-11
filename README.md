@@ -52,14 +52,13 @@ Execute the SQL files sequentially in Snowsight to provision and run the entire 
 
 `EXECUTE IMMEDIATE FROM @SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo/branches/main/sql/02_ingest_procedure.sql;`
 
-3. **Deploy WAP Transformation Gate:** Run sql/03_wap_transforms.sql to create the Snowpatrol Isolation Forest audit gate and Gold publishing logic.
+3. **Deploy WAP Transformation Gate:** Run `sql/03_wap_transforms.sql` to create the Snowpatrol Isolation Forest audit gate and Gold publishing logic.
 
 `EXECUTE IMMEDIATE FROM @SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo/branches/main/sql/03_models.sql;`
 
-4. **Activate Task DAG:** Run sql/04_task_dag.sql to orchestrate automated hourly ingestion and transformation workflows.
+4. **Activate Task DAG:** Run `sql/04_task_dag.sql` to orchestrate automated hourly ingestion and transformation workflows.
 
 `EXECUTE IMMEDIATE FROM @SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo/branches/main/sql/04_task_dag.sql;`
 
-5. **Launch Metabase BI Dashboard:** Deploy the SPCS service spec (spcs/metabase_service_spec.yaml), then run: \
-`SQL` \
+5. **Launch Metabase BI Dashboard:** Deploy the SPCS service spec `deploy_metabase.sql`, then run: 
 `SHOW ENDPOINTS IN SERVICE SPORTS_ANALYTICS_DB.GOLD_MARKETING.metabase_service; `
