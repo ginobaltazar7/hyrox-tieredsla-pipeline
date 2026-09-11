@@ -1,23 +1,5 @@
-SQL
--- SPCS Service Job for running dbt Silver models
-CREATE OR REPLACE SERVICE 
-SPORTS_ANALYTICS_DB.SILVER.dbt_silver_job
-  IN COMPUTE POOL dbt_compute_pool
-  FROM SPECIFICATION '
-  spec:
-    containers:
-      - name: dbt-silver
-        image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo
-        command: ["dbt", "run", "--select", "silver", "--profiles-dir", "."]
-    ';
-
--- SPCS Service Job for running dbt Gold models
-CREATE OR REPLACE SERVICE SPORTS_ANALYTICS_DB.GOLD_MARKETING.dbt_gold_job
-  IN COMPUTE POOL dbt_compute_pool
-  FROM SPECIFICATION '
-  spec:
-    containers:
-      - name: dbt-gold
-        image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo
-        command: ["dbt", "run", "--select", "gold", "--profiles-dir", "."]
-    ';
+spec:
+  containers:
+    - name: dbt-runner
+      image: /sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:latest
+      command: ["dbt", "run", "--profiles-dir", "."]

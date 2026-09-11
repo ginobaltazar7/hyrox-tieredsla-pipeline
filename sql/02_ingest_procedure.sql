@@ -1,5 +1,4 @@
 -- Description: Bundles the Pydantic validation schema and a generator workflow directly into a Snowflake Python Stored Procedure.
-SQL
 CREATE OR REPLACE PROCEDURE SPORTS_ANALYTICS_DB.RAW_BRONZE.sp_ingest_hyrox(season_num INT)
 RETURNS STRING
 LANGUAGE PYTHON

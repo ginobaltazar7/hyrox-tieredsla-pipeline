@@ -32,7 +32,7 @@ To accommodate the SLA, the architecture splits ingestion and  transformation pi
 
 - **Ingestion:** `pyrox-client` executed via Snowpark Python with Pydantic generator validation (`python/ingest_pyrox.py`). 
 
-- **Transformation & Modeling:** dbt Core project (`dbt_project/`) compiling incremental silver models and gold OBT/snapshots directly inside Snowflake. 
+- **Transformation & Modeling:** dbt Core project (`dbt_project/`) compiling incremental silver models and gold OBT/snapshots directly inside Snowflake. Requires creation of Docker images uploaded to Snowflake repo.
 
 - **Storage & Compute:** Snowflake multi-cluster warehousing, serverless task orchestration, and SPCS container pools. 
 
@@ -46,14 +46,20 @@ To accommodate the SLA, the architecture splits ingestion and  transformation pi
 
 Execute the SQL files sequentially in Snowsight to provision and run the entire pipeline directly within Snowflake:
 
-1. **Provision Infrastructure & Egress Rules:** Run sql/01_setup_infrastructure.sql to configure databases, schemas, compute pools, and network rules.
+1. **Provision Infrastructure & Egress Rules:** Run `sql/01_setup_infrastructure.sql` to configure databases, schemas, compute pools, and network rules.
 
-2. **Deploy Ingestion Procedure:** Run sql/02_ingest_procedure.sql to register the Pydantic-validated ingestion stored procedure.
+2. **Deploy Ingestion Procedure:** Run `sql/02_ingest_procedure.sql` to register the Pydantic-validated ingestion stored procedure.  
+
+`EXECUTE IMMEDIATE FROM @SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo/branches/main/sql/02_ingest_procedure.sql;`
 
 3. **Deploy WAP Transformation Gate:** Run sql/03_wap_transforms.sql to create the Snowpatrol Isolation Forest audit gate and Gold publishing logic.
 
+`EXECUTE IMMEDIATE FROM @SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo/branches/main/sql/03_models.sql;`
+
 4. **Activate Task DAG:** Run sql/04_task_dag.sql to orchestrate automated hourly ingestion and transformation workflows.
 
+`EXECUTE IMMEDIATE FROM @SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo/branches/main/sql/04_task_dag.sql;`
+
 5. **Launch Metabase BI Dashboard:** Deploy the SPCS service spec (spcs/metabase_service_spec.yaml), then run: \
-SQL \
-SHOW ENDPOINTS IN SERVICE SPORTS_ANALYTICS_DB.GOLD_MARKETING.metabase_service; \
+`SQL` \
+`SHOW ENDPOINTS IN SERVICE SPORTS_ANALYTICS_DB.GOLD_MARKETING.metabase_service; `

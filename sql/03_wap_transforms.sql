@@ -1,5 +1,4 @@
 -- Description: Executes the WAP lifecycle, leveraging an Isolation Forest machine learning model to audit race timing distributions before publishing to tiered Gold schemas.
-SQL
 CREATE OR REPLACE PROCEDURE SPORTS_ANALYTICS_DB.SILVER.sp_snowpatrol_wap_gate()
 RETURNS STRING
 LANGUAGE PYTHON
