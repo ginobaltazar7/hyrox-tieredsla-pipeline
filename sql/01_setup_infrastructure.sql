@@ -32,12 +32,24 @@ ALTER COMPUTE POOL metabase_compute_pool RESUME;
 SHOW COMPUTE POOLS LIKE 'dbt_compute_pool';
 SHOW COMPUTE POOLS LIKE 'metabase_compute_pool';
 
-
 -- Verify image repository contains the latest runner images
 SHOW IMAGES IN IMAGE REPOSITORY SPORTS_ANALYTICS_DB.RAW_BRONZE.dbt_repo;
 
 -- Verify target databases and schemas exist
 SHOW SCHEMAS IN DATABASE SPORTS_ANALYTICS_DB;
+
+-- Create Hyrox Table in RAW_BRONZE for Ingested Data
+CREATE OR REPLACE TABLE SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_RAW_SEASON_8 (
+    athlete_id VARCHAR,
+    name VARCHAR,
+    season VARCHAR,
+    location VARCHAR,
+    total_time_minutes FLOAT,
+    division VARCHAR,
+    updated_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+);
+
+DESCRIBE TABLE SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_RAW_SEASON_8;
 
 -- Establish Secure GitHub API Integration
 CREATE OR REPLACE API INTEGRATION github_api_integration
@@ -53,19 +65,8 @@ CREATE OR REPLACE GIT REPOSITORY SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo
 -- Fetch Code and Verify Staging Files
 ALTER GIT REPOSITORY SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo FETCH;
 LS @SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo/branches/main;  
+SHOW GIT BRANCHES IN SPORTS_ANALYTICS_DB.RAW_BRONZE.hyrox_repo;
 
--- Create Hyrox Table in RAW_BRONZE for Ingested Data
-CREATE OR REPLACE TABLE SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_RAW_SEASON_8 (
-    athlete_id VARCHAR,
-    name VARCHAR,
-    season VARCHAR,
-    location VARCHAR,
-    total_time_minutes FLOAT,
-    division VARCHAR,
-    updated_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
-);
-
-DESCRIBE TABLE SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_RAW_SEASON_8;
 
 -- Egress network rule and external access integration for pyrox-client package retrieval
 -- Works only with Snowflake accounts that have External Network Access enabled and configured and not a trial account. If you are using a trial account, you can skip this step and manually install the pyrox-client package in your local environment.
