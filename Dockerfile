@@ -11,6 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Explicitly copy scripts and project source code into container
 COPY scripts/ ./scripts/
+COPY utils/ ./utils/
 COPY dbt_project/ ./dbt_project/
 
 # Default fallback command if the container runs without arguments

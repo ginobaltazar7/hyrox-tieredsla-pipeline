@@ -14,6 +14,8 @@ import pyarrow.parquet as pq
 from pydantic import BaseModel, Field, ValidationError
 import pyrox
 from snowflake.snowpark import Session
+from utils.sanitizers import safe_int, safe_float
+from utils.session import get_snowpark_session
 
 # Configure structured logging to stdout for automatic SPCS log capture and telemetry
 logging.basicConfig(
@@ -31,29 +33,6 @@ class HyroxRecordModel(BaseModel):
     location: str
     total_time_minutes: float = Field(..., ge=0.0)
     division: str
-
-def get_snowpark_session() -> Session:
-    if os.path.exists("/snowflake/session/token"):
-        with open("/snowflake/session/token", "r") as f:
-            token = f.read().strip()
-        return Session.builder.configs({
-            "host": os.getenv("SNOWFLAKE_HOST"),
-            "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-            "token": token,
-            "authenticator": "oauth",
-            "warehouse": "COMPUTE_WH",
-            "database": "SPORTS_ANALYTICS_DB",
-            "schema": "RAW_BRONZE"
-        }).create()
-    else:
-        return Session.builder.configs({
-            "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-            "user": os.getenv("SNOWFLAKE_USER"),
-            "password": os.getenv("SNOWFLAKE_PASSWORD"),
-            "warehouse": "COMPUTE_WH",
-            "database": "SPORTS_ANALYTICS_DB",
-            "schema": "RAW_BRONZE"
-        }).create()
     
 def batch_generator(df: pd.DataFrame, batch_size: int = 1000, max_rows: int = 5000) -> Generator[pd.DataFrame, None, None]:
     total_input_rows = len(df)
@@ -77,17 +56,17 @@ def batch_generator(df: pd.DataFrame, batch_size: int = 1000, max_rows: int = 50
         for row in batch_records:
             try:
                 record = HyroxRecordModel(
-                    athlete_id=str(row.get("athlete_id", "UNKNOWN")),
-                    name=str(row.get("name", "ANONYMOUS")),
-                    season=int(row.get("season", 8)),
-                    location=str(row.get("location", "UNKNOWN")),
-                    total_time_minutes=float(row.get("total_time", 0.0)),
-                    division=str(row.get("division", "OPEN"))
+                    athlete_id=str(row.get("athlete_id", "UNKNOWN")) if pd.notna(row.get("athlete_id")) else "UNKNOWN",
+                    name=str(row.get("name", "ANONYMOUS")) if pd.notna(row.get("name")) else "ANONYMOUS",
+                    season=safe_int(row.get("season"), default=8),
+                    location=str(row.get("location", "UNKNOWN")) if pd.notna(row.get("location")) else "UNKNOWN",
+                    total_time_minutes=safe_float(row.get("total_time"), default=0.0),
+                    division=str(row.get("division", "OPEN")) if pd.notna(row.get("division")) else "OPEN"
                 )
                 valid_rows.append(record.model_dump())
             except ValidationError as e:
                 invalid_in_batch += 1
-                logger.debug(f"Validation failed for record {row.get('athlete_id', 'UNKNOWN')}: {e}")
+                logger.debug(f"Validation failed for record: {e}")
                 continue
         
         total_valid += len(valid_rows)
