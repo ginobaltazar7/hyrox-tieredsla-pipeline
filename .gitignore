@@ -1,0 +1,9 @@
+.env
+*.local
+dbt_project/target/
+logs/
+dbt_project/logs/
+dbt_project/.vscode
+target/
+dbt_packages/
+.vscode/

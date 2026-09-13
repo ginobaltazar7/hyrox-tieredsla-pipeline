@@ -5,19 +5,19 @@ config-version: 2
 profile: 'sports_analytics'
 
 model-paths: ["models"]
-target-path: "target"
-clean-targets: ["target", "dbt_packages"]
+snapshot-paths: ["snapshots"]
+clean-targets:
+  - "target"
+  - "dbt_packages"
 
 models:
   sports_analytics:
     silver:
-      materialized: incremental
-      unique_key: ['athlete_id', 'race_id']
+      +materialized: incremental
+      +unique_key:
+        - athlete_id
+        - season
     gold_marketing:
-      materialized: table
-    gold_finance:
-      materialized: snapshot
-      config:
-        target_schema: gold_finance
-        strategy: timestamp
-        updated_at: updated_at
+      +materialized: table
+flags:
+  require_generic_test_arguments_property: true
