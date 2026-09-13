@@ -1,0 +1,27 @@
+name: Deploy SPCS Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Inject Registry URL into Spec
+        env:
+          SNOWFLAKE_REGISTRY: ${{ secrets.SNOWFLAKE_REGISTRY }}
+        run: |
+          # Use sed to replace the placeholder token with the GitHub secret value
+          sed -i "s|__REGISTRY_URL__|$SNOWFLAKE_REGISTRY|g" spcs/dbt_service_spec.yml
+          
+          # Verify the substitution worked correctly in the logs
+          cat spcs/dbt_service_spec.yml
+
+      - name: Commit or Sync to Snowflake
+        run: |
+          echo "Spec file successfully updated with secure registry credentials."
+          # If using Snowflake CLI or automated SQL execution in GitHub Actions, add steps here.

@@ -1,7 +1,7 @@
 spec:
   containers:
     - name: metabase
-      image: /sports_analytics_db/gold_marketing/metabase_repo/metabase:latest
+      image: __REGISTRY_URL__/sports_analytics_db/gold_marketing/metabase_repo/metabase:v2
       env:
         MB_DB_TYPE: h2
   endpoints:

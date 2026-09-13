@@ -1,9 +1,11 @@
 .env
 *.local
 dbt_project/target/
+dbt_project/profiles.yml
 logs/
 dbt_project/logs/
 dbt_project/.vscode
 target/
 dbt_packages/
 .vscode/
+dbt_project/.user.yml
