@@ -11,8 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY dbt_project/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire project workspace into the container
-COPY . /app/
+# Explicitly copy scripts and project source code into container
+COPY scripts/ ./scripts/
+COPY dbt_project/ ./dbt_project/
 
 # Default fallback command if the container runs without arguments
 CMD ["dbt", "run"]
