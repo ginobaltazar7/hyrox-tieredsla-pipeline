@@ -132,12 +132,17 @@ def main():
         pq.write_table(table, file_name, compression='SNAPPY')
         
         logger.info(f"***> Staging {file_name} to internal Snowflake stage (@~)...")
-        session.file.put(file_name, "@~", auto_compress=False, overwrite=True)
+        session.file.put(
+            file_name, 
+            "@SPORTS_ANALYTICS_DB.RAW_BRONZE.ingest_stage", 
+            auto_compress=False, 
+            overwrite=True
+        )
         
         logger.info(f"***> Executing bulk COPY INTO {table_name} from {file_name}...")
         session.sql(f"""
             COPY INTO {table_name}
-            FROM @~/{file_name}
+            FROM @SPORTS_ANALYTICS_DB.RAW_BRONZE.ingest_stage/{file_name}
             FILE_FORMAT = (TYPE = PARQUET)
             MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
         """).collect()
