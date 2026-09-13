@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install all project dependencies (dbt-snowflake, snowpark, pandas, scikit-learn, etc.)
-COPY requirements.txt .
+COPY dbt_project/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the entire project workspace into the container
