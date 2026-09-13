@@ -9,7 +9,6 @@ import logging
 import os
 import sys
 from sklearn.ensemble import IsolationForest
-from snowflake.snowpark import Session
 from utils.session import get_snowpark_session
 
 logging.basicConfig(
@@ -21,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger("wap-transform-runner")
     
 def main():
-    logger.info("Initializing Snowflake Snowpark session...")
+    logger.info("***> Initializing Snowflake Snowpark session...")
     session = get_snowpark_session()
 
     logger.info("Write Stage: Materializing Silver staging table via native Snowflake SQL...")
@@ -42,15 +41,15 @@ def main():
         model = IsolationForest(contamination=0.01, random_state=42)
         df_ml['anomaly_score'] = model.fit_predict(df_ml[['total_time_minutes']])
         anomalies_detected = (df_ml['anomaly_score'] == -1).sum()
-        logger.info(f"Isolation Forest evaluated {len(df_ml)} rows. Anomalies detected: {anomalies_detected}")
+        logger.info(f"***> Isolation Forest evaluated {len(df_ml)} rows. Anomalies detected: {anomalies_detected}")
 
         if anomalies_detected > 5:
-            logger.error(f"WAP GATE HALTED: {anomalies_detected} pacing anomalies exceed threshold.")
+            logger.error(f"***> WAP GATE HALTED: {anomalies_detected} pacing anomalies exceed threshold.")
             raise ValueError(f"WAP GATE HALTED: {anomalies_detected} pacing anomalies exceed threshold.")
     else:
-        logger.info("Dataset below threshold for anomaly detection; skipping ML gate.")
+        logger.info("***> Dataset below threshold for anomaly detection; skipping ML gate.")
 
-    logger.info("Publish Stage: Promoting verified records to Gold tiers via server-side SQL...")
+    logger.info("***> Publish Stage: Promoting verified records to Gold tiers via server-side SQL...")
     session.sql("""
         CREATE OR REPLACE TABLE SPORTS_ANALYTICS_DB.GOLD_MARKETING.pacing_obt AS 
         SELECT * FROM SPORTS_ANALYTICS_DB.SILVER.stg_race_performance_wap
@@ -61,7 +60,7 @@ def main():
         SELECT * FROM SPORTS_ANALYTICS_DB.SILVER.stg_race_performance_wap
     """).collect()
 
-    logger.info("WAP Audit Passed: Verified and published cleanly to Gold.")
+    logger.info("***> WAP Audit Passed: Verified and published cleanly to Gold.")
 
 if __name__ == "__main__":
     main()
