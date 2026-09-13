@@ -3,6 +3,7 @@
     Executes the Write-Audit-Publish lifecycle, leveraging an Isolation Forest 
     machine learning model to audit race timing distributions before publishing to Gold, 
     and native Snowflake SQL or Snowpark DataFrames instead of pandas.
+    TODO - park get_snowpark_session() in a shared utils module for reuse across scripts.
 """
 
 import logging
@@ -19,17 +20,32 @@ logging.basicConfig(
 )
 logger = logging.getLogger("wap-transform-runner")
 
+def get_snowpark_session() -> Session:
+    if os.path.exists("/snowflake/session/token"):
+        with open("/snowflake/session/token", "r") as f:
+            token = f.read().strip()
+        return Session.builder.configs({
+            "host": os.getenv("SNOWFLAKE_HOST"),
+            "account": os.getenv("SNOWFLAKE_ACCOUNT"),
+            "token": token,
+            "authenticator": "oauth",
+            "warehouse": "COMPUTE_WH",
+            "database": "SPORTS_ANALYTICS_DB",
+            "schema": "RAW_BRONZE"
+        }).create()
+    else:
+        return Session.builder.configs({
+            "account": os.getenv("SNOWFLAKE_ACCOUNT"),
+            "user": os.getenv("SNOWFLAKE_USER"),
+            "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            "warehouse": "COMPUTE_WH",
+            "database": "SPORTS_ANALYTICS_DB",
+            "schema": "RAW_BRONZE"
+        }).create()
+    
 def main():
     logger.info("Initializing Snowflake Snowpark session...")
-    session = Session.builder.configs({
-        "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-        "user": os.getenv("SNOWFLAKE_USER"),
-        "password": os.getenv("SNOWFLAKE_PASSWORD"),
-        "role": "ACCOUNTADMIN",
-        "warehouse": "COMPUTE_WH",
-        "database": "SPORTS_ANALYTICS_DB",
-        "schema": "SILVER"
-    }).create()
+    session = get_snowpark_session()
 
     logger.info("Write Stage: Materializing Silver staging table via native Snowflake SQL...")
     session.sql("""

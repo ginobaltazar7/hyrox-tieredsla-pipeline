@@ -32,6 +32,29 @@ class HyroxRecordModel(BaseModel):
     total_time_minutes: float = Field(..., ge=0.0)
     division: str
 
+def get_snowpark_session() -> Session:
+    if os.path.exists("/snowflake/session/token"):
+        with open("/snowflake/session/token", "r") as f:
+            token = f.read().strip()
+        return Session.builder.configs({
+            "host": os.getenv("SNOWFLAKE_HOST"),
+            "account": os.getenv("SNOWFLAKE_ACCOUNT"),
+            "token": token,
+            "authenticator": "oauth",
+            "warehouse": "COMPUTE_WH",
+            "database": "SPORTS_ANALYTICS_DB",
+            "schema": "RAW_BRONZE"
+        }).create()
+    else:
+        return Session.builder.configs({
+            "account": os.getenv("SNOWFLAKE_ACCOUNT"),
+            "user": os.getenv("SNOWFLAKE_USER"),
+            "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            "warehouse": "COMPUTE_WH",
+            "database": "SPORTS_ANALYTICS_DB",
+            "schema": "RAW_BRONZE"
+        }).create()
+    
 def batch_generator(df: pd.DataFrame, batch_size: int = 1000, max_rows: int = 5000) -> Generator[pd.DataFrame, None, None]:
     total_input_rows = len(df)
     if total_input_rows > max_rows:
@@ -79,15 +102,7 @@ def batch_generator(df: pd.DataFrame, batch_size: int = 1000, max_rows: int = 50
 
 def main():
     logger.info("Initializing Snowflake Snowpark session for ingestion runner...")
-    session = Session.builder.configs({
-        "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-        "user": os.getenv("SNOWFLAKE_USER"),
-        "password": os.getenv("SNOWFLAKE_PASSWORD"),
-        "role": "ACCOUNTADMIN",
-        "warehouse": "COMPUTE_WH",
-        "database": "SPORTS_ANALYTICS_DB",
-        "schema": "RAW_BRONZE"
-    }).create()
+    session = get_snowpark_session()
 
     season_num = int(os.getenv("HYROX_SEASON", "8"))
     max_rows = int(os.getenv("MAX_ROWS", "5000"))
