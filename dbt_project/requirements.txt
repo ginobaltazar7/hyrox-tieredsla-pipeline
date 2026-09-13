@@ -1,0 +1,7 @@
+dbt-snowflake
+snowflake-snowpark-python
+pandas
+pyarrow
+pydantic
+scikit-learn
+pyrox-client

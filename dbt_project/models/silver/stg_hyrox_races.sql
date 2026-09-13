@@ -12,5 +12,6 @@ SELECT
     season,
     location,
     total_time_minutes,
-    division
+    division,
+    updated_at
 FROM {{ source('raw_bronze', 'hyrox_raw_season_8') }}

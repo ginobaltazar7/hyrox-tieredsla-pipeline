@@ -21,6 +21,7 @@ class HyroxRecordModel(BaseModel):
     location: str
     total_time_minutes: float = Field(..., ge=0.0)
     division: str
+    updated_at: datetime
 
 def batch_generator(df: pd.DataFrame, batch_size: int = 1000) -> Generator[pd.DataFrame, None, None]:
     for i in range(0, len(df), batch_size):
@@ -35,6 +36,7 @@ def batch_generator(df: pd.DataFrame, batch_size: int = 1000) -> Generator[pd.Da
                     location=str(row.get("location", "UNKNOWN")),
                     total_time_minutes=float(row.get("total_time", 0.0)),
                     division=str(row.get("division", "OPEN"))
+                    updated_at=current_ts
                 )
                 valid_rows.append(record.model_dump())
             except ValidationError:

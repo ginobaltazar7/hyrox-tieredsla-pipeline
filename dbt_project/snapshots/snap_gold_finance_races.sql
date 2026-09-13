@@ -3,7 +3,7 @@
 {{
     config(
         target_schema='gold_finance',
-        unique_key='athlete_id',
+        unique_key="athlete_id || '-' || season",
         strategy='timestamp',
         updated_at='updated_at',
         invalidate_hard_deletes=true
@@ -17,7 +17,7 @@ SELECT
     location,
     total_time_minutes,
     division,
-    updated_at
+    updated_at::timestamp_ntz as updated_at
 FROM {{ ref('stg_hyrox_races') }}
 
 {% endsnapshot %}

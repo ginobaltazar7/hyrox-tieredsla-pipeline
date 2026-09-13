@@ -1,4 +1,5 @@
 -- Step 1: Ingest raw data via Snowpark Python procedure
+-- TODO - refactor hardcoded HYROX_SEASON, SCHEDULE and MAX_ROWS to use a control table or dynamic parameterization
 CREATE OR REPLACE TASK SPORTS_ANALYTICS_DB.RAW_BRONZE.task_step1_ingest
   SCHEDULE = '60 MINUTE'
 AS
@@ -31,12 +32,20 @@ AS
           command: ["sh", "-c", "dbt run --select silver --profiles-dir . && dbt test --select silver --profiles-dir ."]
     $$;
 
--- Step 3: Run Snowpatrol WAP Audit Gate on dbt's Silver output
+-- Step 3: Run Snowpatrol WAP Audit Gate via SPCS Job Service
 CREATE OR REPLACE TASK SPORTS_ANALYTICS_DB.SILVER.task_step3_wap_audit
-  WAREHOUSE = 'WH_MARKETING_XS'
   AFTER SPORTS_ANALYTICS_DB.SILVER.task_step2_dbt_silver
 AS
-  CALL SPORTS_ANALYTICS_DB.SILVER.sp_snowpatrol_wap_gate();
+  EXECUTE JOB SERVICE
+    IN COMPUTE POOL dbt_compute_pool
+    NAME = SPORTS_ANALYTICS_DB.SILVER.wap_job
+    FROM SPECIFICATION $$
+    spec:
+      containers:
+        - name: wap-runner
+          image: /sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:latest
+          command: ["python", "scripts/wap_transform.py"]
+    $$;
 
 -- Step 4: Run dbt Gold Models via SPCS Job Task (Serverless)
 CREATE OR REPLACE TASK SPORTS_ANALYTICS_DB.GOLD_MARKETING.task_step4_dbt_gold
