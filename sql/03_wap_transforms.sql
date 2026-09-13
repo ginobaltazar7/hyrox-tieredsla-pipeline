@@ -1,4 +1,5 @@
 -- Description: Executes the WAP lifecycle, leveraging an Isolation Forest machine learning model to audit race timing distributions before publishing to tiered Gold schemas.
+-- Write Stage: Materialize Silver staging table from Bronze
 -- TODO: Scrubbed this in favor of scripted Snowpark DataFrame transformations and server-side SQL for better performance and scalability. The ML gate is retained for future anomaly detection needs.
 CREATE OR REPLACE PROCEDURE SPORTS_ANALYTICS_DB.SILVER.sp_snowpatrol_wap_gate()
 RETURNS STRING
@@ -13,7 +14,6 @@ from sklearn.ensemble import IsolationForest
 from snowflake.snowpark import Session
 
 def snowpatrol_wap_handler(session: Session) -> str:
-    # Write Stage: Materialize Silver staging table from Bronze
     session.sql("""
         CREATE OR REPLACE TABLE SPORTS_ANALYTICS_DB.SILVER.stg_race_performance_wap AS
         SELECT athlete_id, name, season, location, total_time_minutes, division, updated_at
