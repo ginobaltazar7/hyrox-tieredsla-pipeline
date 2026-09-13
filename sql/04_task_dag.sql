@@ -15,7 +15,7 @@ AS
     spec:
       containers:
         - name: ingest-runner
-          image: /sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:latest
+          image: __REGISTRY_URL__/sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:v2
           env:
             HYROX_SEASON: "8"
             MAX_ROWS: "5000"
@@ -34,7 +34,7 @@ AS
     spec:
       containers:
         - name: dbt-silver
-          image: /sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:latest
+          image: __REGISTRY_URL__/sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:v2
           command: ["sh", "-c", "dbt run --select silver --profiles-dir . && dbt test --select silver --profiles-dir ."]
     $$;
 
@@ -50,7 +50,7 @@ AS
     spec:
       containers:
         - name: wap-runner
-          image: /sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:latest
+          image: __REGISTRY_URL__/sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:v2
           command: ["python", "scripts/wap_transform.py"]
     $$;
 
@@ -66,7 +66,7 @@ AS
     spec:
       containers:
         - name: dbt-gold
-          image: /sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:latest
+          image: __REGISTRY_URL__/sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:v2
           command: ["sh", "-c", "dbt run --select gold --profiles-dir . && dbt test --select gold --profiles-dir ."]
     $$;
 

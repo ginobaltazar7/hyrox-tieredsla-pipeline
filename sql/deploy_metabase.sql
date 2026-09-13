@@ -7,7 +7,7 @@ CREATE OR REPLACE SERVICE SPORTS_ANALYTICS_DB.GOLD_MARKETING.metabase_service
   spec:
     containers:
       - name: metabase
-        image: /sports_analytics_db/raw_bronze/dbt_repo/metabase:latest
+        image: __REGISTRY_URL__/sports_analytics_db/raw_bronze/dbt_repo/metabase:v2
         env:
           MB_DB_TYPE: h2
     endpoints:
