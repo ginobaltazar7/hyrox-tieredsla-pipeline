@@ -20,7 +20,7 @@ from utils.session import get_snowpark_session
 logging.basicConfig(
     stream=sys.stdout,
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    format="%(asctime)s ====>> [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger("ingest-runner")
@@ -73,44 +73,66 @@ def batch_generator(df: pd.DataFrame, batch_size: int = 1000, max_rows: int = 50
         batch_count += 1
         
         if valid_rows:
-            logger.info(f"***> Batch {batch_count}: Processed {len(valid_rows)} valid rows ({invalid_in_batch} dropped due to validation).")
+            logger.info(f"Batch {batch_count}: Processed {len(valid_rows)} valid rows ({invalid_in_batch} dropped due to validation).")
             yield pd.DataFrame(valid_rows)
 
-    logger.info(f"***> Batch generation complete. Total valid rows: {total_valid}, Total dropped rows: {total_invalid}")
+    logger.info(f"Batch generation complete. Total valid rows: {total_valid}, Total dropped rows: {total_invalid}")
 
 def main():
-    logger.info("***> Initializing Snowflake Snowpark session for ingestion runner...")
     session = get_snowpark_session()
+    logger.info(f"Initializing Snowflake Snowpark session {session} for ingestion runner...")
 
     season_num = int(os.getenv("HYROX_SEASON", "8"))
     max_rows = int(os.getenv("MAX_ROWS", "5000"))
     table_name = f"hyrox_raw_season_{season_num}"
 
+
+    # Uncomment to use pre-fetched parquet file generated via Colab and tracked in repository
     try:
-        logger.info(f"***>Fetching raw data for Hyrox Season {season_num} via pyrox client...")
+        local_parquet_path = f"data/hyrox_season_{season_num}.parquet"
+        logger.info(f"Reading pre-fetched raw data for Hyrox Season {season_num} from {local_parquet_path}...")
+        if not os.path.exists(local_parquet_path):
+            raise FileNotFoundError(f"====>> Pre-fetched dataset not found at {local_parquet_path}. Ensure it is committed/synced.")   
+        df_raw = pd.read_parquet(local_parquet_path)
+        if df_raw is None or df_raw.empty:
+            logger.warning(f"No data found in local dataset for Hyrox Season {season_num}.")
+        else:
+            df_raw.columns = [c.lower().replace(" ", "_") for c in df_raw.columns]
+            logger.info(f"Successfully loaded raw dataset containing {len(df_raw)} records.")
+    except FileNotFoundError as e:
+        logger.error(f"File path error: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error while reading local parquet file: {e}")
+        raise
+
+    """"
+    # Uncomment to use fetch raw data for the specified Hyrox season using the pyrox client
+    try:
+        logger.info(f"Fetching raw data for Hyrox Season {season_num} via pyrox client...")
         client = pyrox.PyroxClient()
         df_raw = client.get_season(season=season_num)
         if df_raw is None or df_raw.empty:
-            logger.warning(f"***> No data found for Hyrox Season {season_num}.")
+            logger.warning(f"No data found for Hyrox Season {season_num}.")
         else:
-            logger.info(f"***> Successfully fetched raw data for Hyrox Season {season_num}.")
+            logger.info(f"Successfully fetched raw data for Hyrox Season {season_num}.")
             df_raw.columns = [c.lower().replace(" ", "_") for c in df_raw.columns]
     except ImportError as e:
-        logger.error(f"***> Pyrox client not installed or failed to import: {e}")
+        logger.error(f"Pyrox client not installed or failed to import: {e}")
         raise
     except AttributeError as e:
-        logger.error(f"***> Pyrox client method or attribute mismatch: {e}")
+        logger.error(f"Pyrox client method or attribute mismatch: {e}")
         raise
     except ConnectionError as e:
-        logger.error(f"***> Failed to connect to Hyrox data source: {e}")
+        logger.error(f"Failed to connect to Hyrox data source: {e}")
         raise
     except Exception as e:
-        logger.error(f"***> Unexpected error while fetching raw data: {e}")
+        logger.error(f"Unexpected error while fetching raw data: {e}")
         raise
-    
-    logger.info(f"***> Successfully fetched raw dataset containing {len(df_raw)} records.")
+    """
+    logger.info(f"Successfully fetched raw dataset containing {len(df_raw)} records.")
 
-    logger.info(f"***> Ensuring target bronze table {table_name} exists and truncating prior snapshot...")
+    logger.info(f"Ensuring target bronze table {table_name} exists and truncating prior snapshot...")
     session.sql(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             athlete_id VARCHAR,
@@ -126,12 +148,12 @@ def main():
     loaded_batches = 0
     for batch_idx, batch_df in enumerate(batch_generator(df_raw, batch_size=1000, max_rows=max_rows)):
         file_name = f"batch_{batch_idx}.parquet"
-        logger.info(f"***> Writing batch {batch_idx} to local Parquet file: {file_name}")
+        logger.info(f"Writing batch {batch_idx} to local Parquet file: {file_name}")
         
         table = pa.Table.from_pandas(batch_df)
         pq.write_table(table, file_name, compression='SNAPPY')
         
-        logger.info(f"***> Staging {file_name} to internal Snowflake stage (@~)...")
+        logger.info(f"Staging {file_name} to internal Snowflake stage (@~)...")
         session.file.put(
             file_name, 
             "@SPORTS_ANALYTICS_DB.RAW_BRONZE.ingest_stage", 
@@ -139,7 +161,7 @@ def main():
             overwrite=True
         )
         
-        logger.info(f"***> Executing bulk COPY INTO {table_name} from {file_name}...")
+        logger.info(f"Executing bulk COPY INTO {table_name} from {file_name}...")
         session.sql(f"""
             COPY INTO {table_name}
             FROM @SPORTS_ANALYTICS_DB.RAW_BRONZE.ingest_stage/{file_name}
@@ -151,7 +173,7 @@ def main():
             os.remove(file_name)
         loaded_batches += 1
 
-    logger.info(f"***> Pipeline complete. Successfully loaded {loaded_batches} batches into {table_name}.")
+    logger.info(f"Pipeline complete. Successfully loaded {loaded_batches} batches into {table_name}.")
 
 if __name__ == "__main__":
     main()

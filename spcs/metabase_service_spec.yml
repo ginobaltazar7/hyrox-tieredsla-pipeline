@@ -1,7 +1,7 @@
 spec:
   containers:
     - name: metabase
-      image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/gold_marketing/metabase_repo/metabase:v10
+      image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/gold_marketing/metabase_repo/metabase:v11
       env:
         MB_DB_TYPE: h2
   endpoints:

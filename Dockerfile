@@ -11,6 +11,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Explicitly copy scripts and project source code into container
+COPY data/ ./data/
 COPY scripts/ ./scripts/
 COPY utils/ ./utils/
 COPY dbt_project/ ./dbt_project/
