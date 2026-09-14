@@ -1,5 +1,5 @@
 spec:
   containers:
     - name: dbt-runner
-      image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:v11
+      image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:v12
       command: ["dbt", "run", "--profiles-dir", "."]
