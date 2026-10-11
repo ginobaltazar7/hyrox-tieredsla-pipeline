@@ -6,7 +6,7 @@ USE DATABASE SPORTS_ANALYTICS_DB;
 -- Step 1: Ingest raw data via Snowpark Python procedure
 USE SCHEMA SPORTS_ANALYTICS_DB.RAW_BRONZE;
 CREATE OR REPLACE TASK task_step1_ingest
-  SCHEDULE = '60 MINUTE'
+  SCHEDULE = '1440 MINUTE' -- Run once per day
 AS
   EXECUTE JOB SERVICE
     IN COMPUTE POOL dbt_compute_pool
@@ -70,8 +70,15 @@ AS
           command: ["sh", "-c", "dbt run --select gold --profiles-dir . && dbt test --select gold --profiles-dir ."]
     $$;
 
+-- Step 5: Sync curated Gold records to Neo4j knowledge graph
+USE SCHEMA SPORTS_ANALYTICS_DB.RAW_BRONZE;
+CREATE OR REPLACE TASK task_step5_neo4j_graph
+AFTER task_step4_dbt_gold
+AS CALL SPORTS_ANALYTICS_DB.RAW_BRONZE.sp_sync_neo4j_graph();
+
 -- Resume Task Chain (Must be resumed in reverse dependency order)
 USE SCHEMA SPORTS_ANALYTICS_DB.RAW_BRONZE;
+ALTER TASK task_step5_neo4j_graph RESUME;
 ALTER TASK task_step4_dbt_gold RESUME;
 ALTER TASK task_step3_wap_audit RESUME;
 ALTER TASK task_step2_dbt_silver RESUME;

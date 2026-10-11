@@ -1,0 +1,22 @@
+services:
+  hyrox-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms: ["linux/amd64"]
+    volumes:
+      - .:/app                # live-mount: edit locally, no rebuilds (WORKDIR is /app, verified)
+    env_file: .env            # SNOWFLAKE_* creds, gitignored — part of the password hygiene fix
+    command: ["sleep", "infinity"]
+    # usage:
+    #   docker compose exec hyrox-dev dbt run --project-dir ./dbt_project --profiles-dir ./dbt_project
+    #   docker compose exec hyrox-dev python scripts/raw_ingest.py
+  metabase:
+    image: metabase/metabase:v0.55
+    ports: ["3000:3000"]
+    volumes:
+      - metabase-data:/metabase.db
+    environment:
+      MB_DB_TYPE: h2
+volumes:
+  metabase-data:

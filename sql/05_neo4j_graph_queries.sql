@@ -1,19 +1,26 @@
 -- Description: Executes graph queries directly through Snowflake SQL stored procedure connectors to analyze athlete station transitions and relationships.
--- TODO: Refactor hardcoded test values (ATH_001, London) into a dynamic Snowflake stored procedure loop pulling live records from SILVER tables.
+-- Graph should only ever contain WAP verified records, as the WAP gate is a prerequisite for any graph ingestion.
+-- TODO: Extend sp_sync_neo4j_graph's UNWIND to MERGE per-split Station nodes,
+--   e.g. (a)-[:RAN {time_mins: row.run1_time}]->(:Station {name: 'Run 1'}),
+--   so the graph can answer analyst Q1 (transition variance) and Q2 (pacing
+--   degradation). Requires: Item 1 station splits flowing through gold.
 
--- 1. Query matching specific athlete, location, and season
-CALL NEO4J_GRAPH_APP.PUBLIC.EXECUTE_CYPHER(
-    'MATCH (a:Athlete {id: $athlete_id})-[:COMPETED_IN {season: $season}]->(r:RaceEvent {location: "London", season: $season}) '
-    'RETURN a.name AS AthleteName, r.division AS Division, r.total_time_minutes AS Time, $season AS Season',
-    PARSE_JSON('{"athlete_id": "ATH_001", "season": "8"}')
-);
 
--- 2. Creation query incorporating composite grain (athlete_id + season) and updated_at
-CALL NEO4J_GRAPH_APP.PUBLIC.EXECUTE_CYPHER(
-    'MERGE (a:Athlete {id: $athlete_id}) ' +
-    'MERGE (r:RaceEvent {location: $location, season: $season}) ' +
-    'MERGE (a)-[:COMPETED_IN {season: $season, updated_at: $updated_at}]->(r) ' +
-    'CREATE (a)-[:TRANSITIONED_TO {duration_mins: $transition_time, season: $season, updated_at: $updated_at}]->' +
-    '(s:Station {name: $station_name})',
-    PARSE_JSON('{"athlete_id": "ATH_001", "season": "8", "location": "London", "transition_time": 3.8, "station_name": "Sled Push", "updated_at": "' || CURRENT_TIMESTAMP() || '"}')
-);
+CREATE OR REPLACE PROCEDURE SPORTS_ANALYTICS_DB.RAW_BRONZE.sp_sync_neo4j_graph()
+RETURNS VARCHAR
+LANGUAGE PYTHON
+RUNTIME_VERSION = '3.11'
+PACKAGES = ('snowflake-snowpark-python')
+HANDLER = 'main'
+AS
+$$
+def main(session):
+    rows = session.sql("""
+        SELECT athlete_id, name, event_id, location, season,
+               division, total_time_minutes, updated_at
+        FROM SPORTS_ANALYTICS_DB.GOLD_MARKETING.pacing_obt
+    """).to_pandas().to_dict("records")
+    # batch rows -> CALL NEO4J_GRAPH_APP.PUBLIC.EXECUTE_CYPHER with the UNWIND/MERGE
+    ...
+    return f"synced {len(rows)} rows"
+$$;

@@ -44,13 +44,22 @@ SHOW SCHEMAS IN DATABASE SPORTS_ANALYTICS_DB;
 
 -- Create Hyrox Table in RAW_BRONZE for Ingested Data
 CREATE OR REPLACE TABLE SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_RAW_SEASON_8 (
-    athlete_id VARCHAR,
-    name VARCHAR,
-    season VARCHAR,
-    location VARCHAR,
+    result_id VARCHAR NOT NULL,   -- coalesce(source_result_id, synthetic), the raw grain
+    source_result_id VARCHAR,     -- raw value, nullable (698K nulls observed)
+    event_id VARCHAR NOT NULL,    -- zero nulls, anchors the synthetic hash
+    athlete_id VARCHAR NOT NULL,  -- derived sha256(name|gender|nationality|age_group), rule v1
+    name VARCHAR, gender VARCHAR, nationality VARCHAR, age_group VARCHAR,
+    division VARCHAR,             -- doubles/relay encoded here (elite_doubles, doubles, pro_doubles, relay)
+    season INT,                   -- NULLABLE: do not default missing to 8
+    year INT, event_name VARCHAR, location VARCHAR,
     total_time_minutes FLOAT,
-    division VARCHAR,
-    updated_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+    run1_time FLOAT, run2_time FLOAT, run3_time FLOAT, run4_time FLOAT,
+    run5_time FLOAT, run6_time FLOAT, run7_time FLOAT, run8_time FLOAT,
+    skierg_time FLOAT, sledpush_time FLOAT, sledpull_time FLOAT,
+    burpeebroadjump_time FLOAT, rowerg_time FLOAT, farmerscarry_time FLOAT,
+    sandbaglunges_time FLOAT, wallballs_time FLOAT,
+    roxzone_time FLOAT, run_time FLOAT, work_time FLOAT, best_run_lap FLOAT,
+    updated_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()  -- pipeline load time
 );
 
 DESCRIBE TABLE SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_RAW_SEASON_8;

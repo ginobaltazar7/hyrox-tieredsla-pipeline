@@ -26,7 +26,7 @@ Tier 2: Official Results & Compliance Path (Audit / Financial Focus)
 
 - **Finance / Official Race Adjudication Team:** Needs reconcilable daily batches with strict anomaly checks and penalty validation before locking in official world rankings and prize payouts.
 
-To accommodate the SLA, the architecture splits ingestion and  transformation pipelines, delivering the hourly and a verified auditable from the same source of truth without any external compute.
+To accommodate the SLA, the architecture splits ingestion and transformation pipelines, delivering the hourly and a verified auditable from the same source of truth without any external compute.
 
 ## Tech Stack & Native Architecture
 
@@ -36,7 +36,7 @@ To accommodate the SLA, the architecture splits ingestion and  transformation pi
 
 - **Storage & Compute:** Snowflake warehousing, serverless task orchestration, and SPCS container pools. 
 
-- **Governance & Quality:** Snowpatrol Isolation Forest anomaly detection acting as a WAP circuit breaker (`scripts/wap_transforms.py`).
+- **Governance & Quality:** Snowpatrol Isolation Forest anomaly detection acting as a WAP circuit breaker (`scripts/wap_transforms.py`). The current gate is univariate (total_time_minutes); a multivariate extension across per-division and per-station features is the next iteration.
 
 - **Presentation Layer:** Metabase hosted natively via Snowpark Container Services (SPCS). 
 
@@ -44,7 +44,9 @@ To accommodate the SLA, the architecture splits ingestion and  transformation pi
 
 ## Native Snowflake Deployment Guide
 
-Before deploying, ensure Snowflake Git repository is fetched and synchronized:
+Rebuilding after an expired trial? See (`RUNBOOK.md`) for the full account-level checklist — trial signup, credential handling, and verification.
+
+Before deploying, ensure this Snowflake Git repository is fetched and synchronized:
 
 1. **Fetch the Repo into Snowflake and run Snowflake SQL:** Pull the scripts into Snowsight run the entire pipeline directly within Snowflake:
 

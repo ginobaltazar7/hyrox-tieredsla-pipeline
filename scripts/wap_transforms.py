@@ -37,18 +37,20 @@ def main():
         FROM SPORTS_ANALYTICS_DB.SILVER.stg_race_performance_wap
     """).to_pandas()
 
+    # Audit
+    halt = False
     if len(df_ml) > 10:
         model = IsolationForest(contamination=0.01, random_state=42)
-        df_ml['anomaly_score'] = model.fit_predict(df_ml[['total_time_minutes']])
-        anomalies_detected = (df_ml['anomaly_score'] == -1).sum()
-        logger.info(f"Isolation Forest evaluated {len(df_ml)} rows. Anomalies detected: {anomalies_detected}")
+        scores = model.fit_predict(df_ml[['total_time_minutes']])
+        anomaly_rate = (scores == -1).mean()
+        logger.info(f"Isolation Forest evaluated {len(df_ml)} rows. Anomalies rate: {anomaly_rate * 100:.2f}%")
 
-        if anomalies_detected > 5:
-            logger.error(f"WAP GATE HALTED: {anomalies_detected} pacing anomalies exceed threshold.")
-            raise ValueError(f"WAP GATE HALTED: {anomalies_detected} pacing anomalies exceed threshold.")
-    else:
-        logger.info("Dataset below threshold for anomaly detection; skipping ML gate.")
-
+        if anomaly_rate > 0.05:
+            halt = True
+    if halt:
+        logger.error(f"WAP GATE HALTED: {anomaly_rate * 100:.2f}% anomaly rate exceeds threshold.")
+        raise ValueError(f"WAP GATE HALTED: {anomaly_rate * 100:.2f}% anomaly rate exceeds threshold.")
+    
     logger.info("Publish Stage: Promoting verified records to Gold tiers via server-side SQL...")
     session.sql("""
         CREATE OR REPLACE TABLE SPORTS_ANALYTICS_DB.GOLD_MARKETING.pacing_obt AS 

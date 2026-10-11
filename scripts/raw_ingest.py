@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, ValidationError
 import pyrox
 from utils.sanitizers import safe_int, safe_float
 from utils.session import get_snowpark_session
+import hashlib
 
 # Configure structured logging to stdout for automatic SPCS log capture and telemetry
 logging.basicConfig(
@@ -25,14 +26,61 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ingest-runner")
 
+SPLIT_FIELDS = ["run1_time","run2_time","run3_time","run4_time","run5_time",
+                "run6_time","run7_time","run8_time","skierg_time","sledpush_time",
+                "sledpull_time","burpeebroadjump_time","rowerg_time",
+                "farmerscarry_time","sandbaglunges_time","wallballs_time",
+                "roxzone_time","run_time","work_time","best_run_lap"]
+
 class HyroxRecordModel(BaseModel):
-    athlete_id: str = Field(..., description="Unique athlete identifier")
+    result_id: str
+    event_id: str
+    athlete_id: str
     name: str
+    gender: Optional[str] = None
+    nationality: Optional[str] = None
+    age_group: Optional[str] = None
     season: int
-    location: str
-    total_time_minutes: float = Field(..., ge=0.0)
+    event_name: Optional[str] = None
+    location: Optional[str] = None
+    year: Optional[int] = None
     division: str
-    
+    total_time_minutes: float = Field(..., ge=0.0)
+    # station splits, all optional — carried through and not coerced
+    run1_time: Optional[float] = None
+    run2_time: Optional[float] = None
+    run3_time: Optional[float] = None
+    run4_time: Optional[float] = None
+    run5_time: Optional[float] = None
+    run6_time: Optional[float] = None
+    run7_time: Optional[float] = None
+    run8_time: Optional[float] = None
+    skierg_time: Optional[float] = None
+    sledpush_time: Optional[float] = None
+    sledpull_time: Optional[float] = None
+    burpeebroadjump_time: Optional[float] = None
+    rowerg_time: Optional[float] = None
+    farmerscarry_time: Optional[float] = None
+    sandbaglunges_time: Optional[float] = None
+    wallballs_time: Optional[float] = None
+    roxzone_time: Optional[float] = None
+    run_time: Optional[float] = None
+    work_time: Optional[float] = None
+    best_run_lap: Optional[float] = None
+
+def derive_athlete_id(name, gender, nationality, age_group) -> str:
+    # Identity rule v1 (best-effort, documented). Known limitations:
+    #  - age_group transitions (athlete ages up) split one human into two IDs
+    #  - common name+demographics can merge two humans into one
+    key = "|".join(s.strip().lower() for s in (name, gender, nationality, age_group))
+    return "ath_" + hashlib.sha256(key.encode()).hexdigest()[:16]
+
+def derive_result_id(source_result_id, event_id, name, division, total_time) -> str:
+    if pd.notna(source_result_id) and str(source_result_id).strip():
+        return str(source_result_id)          # prefer the source's own ID
+    key = "|".join(str(v) for v in (event_id, name, division, total_time))
+    return "res_synth_" + hashlib.sha256(key.encode()).hexdigest()[:16]  # deterministic fallback
+
 def batch_generator(df: pd.DataFrame, batch_size: int = 1000, max_rows: int = 5000) -> Generator[pd.DataFrame, None, None]:
     total_input_rows = len(df)
     if total_input_rows > max_rows:
@@ -54,13 +102,30 @@ def batch_generator(df: pd.DataFrame, batch_size: int = 1000, max_rows: int = 50
         
         for row in batch_records:
             try:
+                name = str(row.get("name", "ANONYMOUS")).strip() if pd.notna(row.get("name")) else "ANONYMOUS"
+                gender = str(row.get("gender")).strip() if pd.notna(row.get("gender")) else ""
+                nationality = str(row.get("nationality")).strip() if pd.notna(row.get("nationality")) else ""
+                age_group = str(row.get("age_group")).strip() if pd.notna(row.get("age_group")) else ""
+                division = str(row.get("division", "OPEN")).strip() if pd.notna(row.get("division")) else "OPEN"
+                event_id = str(row.get("event_id")).strip() if pd.notna(row.get("event_id")) else ""
+
+                splits = {f: safe_float(row.get(f)) for f in SPLIT_FIELDS}
+
                 record = HyroxRecordModel(
-                    athlete_id=str(row.get("athlete_id", "UNKNOWN")) if pd.notna(row.get("athlete_id")) else "UNKNOWN",
-                    name=str(row.get("name", "ANONYMOUS")) if pd.notna(row.get("name")) else "ANONYMOUS",
-                    season=safe_int(row.get("season"), default=8),
-                    location=str(row.get("location", "UNKNOWN")) if pd.notna(row.get("location")) else "UNKNOWN",
+                    result_id=derive_result_id(row.get("source_result_id"), event_id, name, division, row.get("total_time")),
+                    event_id=event_id,
+                    athlete_id=derive_athlete_id(name, gender, nationality, age_group),
+                    name=name,
+                    gender=gender or None,
+                    nationality=nationality or None,
+                    age_group=age_group or None,
+                    division=division,
+                    season=safe_int(row.get("season")) if pd.notna(row.get("season")) else None,
+                    year=safe_int(row.get("year")) if pd.notna(row.get("year")) else None,
+                    event_name=str(row.get("event_name")).strip() if pd.notna(row.get("event_name")) else None,
+                    location=str(row.get("location", "UNKNOWN")).strip() if pd.notna(row.get("location")) else "UNKNOWN",
                     total_time_minutes=safe_float(row.get("total_time"), default=0.0),
-                    division=str(row.get("division", "OPEN")) if pd.notna(row.get("division")) else "OPEN"
+                    **splits,
                 )
                 valid_rows.append(record.model_dump())
             except ValidationError as e:
