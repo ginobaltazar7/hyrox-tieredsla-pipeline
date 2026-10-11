@@ -4,14 +4,21 @@ models:
   - name: stg_hyrox_races
     description: "Staged Hyrox race results model with incremental merge strategy."
     columns:
+      - name: result_id
+        description: "Result-row grain: source_result_id when present, else deterministic synthetic ID."
+        tests:
+          - not_null
+          - unique
+      - name: event_id
+        description: "Event identifier; anchors the synthetic result_id hash."
+        tests:
+          - not_null
       - name: athlete_id
-        description: "Unique athlete identifier."
+        description: "Best-effort person identity: sha256(name|gender|nationality|age_group), rule v1."
         tests:
           - not_null
       - name: season
-        description: "Season number."
-        tests:
-          - not_null
+        description: "Season number; nullable — do not default missing to 8."
       - name: name
         description: "Athlete full name."
       - name: location

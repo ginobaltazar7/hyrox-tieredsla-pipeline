@@ -1,6 +1,6 @@
 -- TODO: Hand-build the analyst dashboards in the Metabase UI per the question→chart
 --   map in the README (Q1 box plot, Q2 scatter, Q3 bar, Q4/Q5 tables, Q6 trend).
---   Manual UI work, no code — candidate for Upwork delegation.
+--   Manual UI work, no code 
 
 USE ROLE ACCOUNTADMIN;
 USE WAREHOUSE COMPUTE_WH;
@@ -11,7 +11,7 @@ CREATE OR REPLACE SERVICE SPORTS_ANALYTICS_DB.GOLD_MARKETING.metabase_service
   spec:
     containers:
       - name: metabase
-        image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo/metabase:v3
+        image: <SNOWFLAKE_ACCOUNT>.registry.snowflakecomputing.com/sports_analytics_db/gold_marketing/metabase_repo/metabase:v12
         env:
           MB_DB_TYPE: h2
     endpoints:

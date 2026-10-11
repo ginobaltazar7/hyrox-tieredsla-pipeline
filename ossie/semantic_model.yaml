@@ -1,3 +1,9 @@
+# TODO: Regenerate this file from dbt semantic models — do not hand-maintain.
+#   1. Settle gold ownership (one writer for GOLD_MARKETING.pacing_obt: WAP script or dbt).
+#   2. Define dbt semantic models on the gold marts
+#      (dbt_project/models/semantic_models/hyrox_semantic_models.yml).
+#   3. Run: dbt parse && ossie-dbt msi-to-ossie -i target/semantic_manifest.json -o ossie/semantic_model.yaml
+
 YAML
 version: 0.2
 semantic_model:

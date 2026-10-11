@@ -34,6 +34,7 @@ SPLIT_FIELDS = ["run1_time","run2_time","run3_time","run4_time","run5_time",
 
 class HyroxRecordModel(BaseModel):
     result_id: str
+    source_result_id: Optional[str] = None
     event_id: str
     athlete_id: str
     name: str
@@ -117,6 +118,7 @@ def batch_generator(
 
                 record = HyroxRecordModel(
                     result_id=derive_result_id(row.get("source_result_id"), event_id, name, division, row.get("total_time")),
+                    source_result_id=str(row.get("source_result_id")).strip() if pd.notna(row.get("source_result_id")) and str(row.get("source_result_id")).strip() else None,
                     event_id=event_id,
                     athlete_id=derive_athlete_id(name, gender, nationality, age_group),
                     name=name,
