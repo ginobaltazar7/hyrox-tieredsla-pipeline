@@ -24,7 +24,7 @@ SNOWFLAKE_PASSWORD=<password>
 4. **Transform:** `cd dbt_project && dbt run --profiles-dir . && dbt test --profiles-dir .` — silver/gold plus schema tests.
 5. **Snapshot:** `dbt snapshot --profiles-dir .` — finance audit trail.
 6. **Verify:** row counts match source (~715K rows); `athlete_id` populated (no `UNKNOWN` swarm); station-split columns present; `result_id` unique.
-7. **Schedule (optional):** deploy SPCS images, run `sql/04_task_dag.sql` for the task chain (ingest → dbt silver → WAP gate → dbt gold → Neo4j sync). And `sed -i "s/<SNOWFLAKE_ACCOUNT>/$SNOWFLAKE_ACCOUNT/g" spcs/*.yml`, `sed -i sql/04_task_dag.sql` `sed -i sql/deploy_metabase.sql`
+7. **Schedule (optional):** deploy SPCS images, run `sql/04_task_dag.sql` for the task chain (ingest → dbt silver → WAP gate → dbt gold → Neo4j sync). And `sed -i "s/<SNOWFLAKE_ACCOUNT>/$SNOWFLAKE_ACCOUNT/g" spcs/*.yml sql/04_task_dag.sql sql/deploy_metabase.sql`
 8. **Redeploy Metabase (optional):** run sql/deploy_metabase.sql (specs aligned: v12, gold_marketing path), grab the endpoint with SHOW ENDPOINTS IN SERVICE ..., then rebuild the dashboards by hand in the UI — the app database doesn't survive an account rebuild, so recreate the charts from the question→chart map in the README.
 
 ## Coverage
