@@ -7,7 +7,7 @@
 import logging
 import os
 import sys
-from typing import Generator
+from typing import Generator, Optional
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -40,7 +40,7 @@ class HyroxRecordModel(BaseModel):
     gender: Optional[str] = None
     nationality: Optional[str] = None
     age_group: Optional[str] = None
-    season: int
+    season: Optional[int] = None
     event_name: Optional[str] = None
     location: Optional[str] = None
     year: Optional[int] = None

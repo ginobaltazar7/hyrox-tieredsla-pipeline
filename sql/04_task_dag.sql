@@ -51,7 +51,7 @@ AS
       containers:
         - name: wap-runner
           image: mrimflq-gt47043.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:v12
-          command: ["python", "scripts/wap_transform.py"]
+          command: ["python", "scripts/wap_transforms.py"]
     $$;
 
 -- Step 4: Run dbt Gold Models via SPCS Job Task (Serverless)

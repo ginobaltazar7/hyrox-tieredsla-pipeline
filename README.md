@@ -44,7 +44,7 @@ To accommodate the SLA, the architecture splits ingestion and transformation pip
 
 ## Native Snowflake Deployment Guide
 
-Rebuilding after an expired trial? See (`RUNBOOK.md`) for the full account-level checklist — trial signup, credential handling, and verification.
+Rebuilding after an expired trial? See [RUNBOOK.md](RUNBOOK.md) for the full account-level checklist — trial signup, credential handling, and verification.
 
 Before deploying, ensure this Snowflake Git repository is fetched and synchronized:
 
