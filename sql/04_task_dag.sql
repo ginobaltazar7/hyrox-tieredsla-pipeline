@@ -1,5 +1,6 @@
 -- Step 1: Ingest raw data via Snowpark Python procedure
--- TODO - refactor hardcoded HYROX_SEASON, SCHEDULE and MAX_ROWS to use a control table or dynamic parameterization
+-- TODO: retire the HYROX_SEASON constant — season is nullable now; HYROX_RAW_SEASON_8 is a legacy name.
+
 USE ROLE ACCOUNTADMIN;
 USE DATABASE SPORTS_ANALYTICS_DB;
 

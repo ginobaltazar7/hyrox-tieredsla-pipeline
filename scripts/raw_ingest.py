@@ -81,10 +81,14 @@ def derive_result_id(source_result_id, event_id, name, division, total_time) -> 
     key = "|".join(str(v) for v in (event_id, name, division, total_time))
     return "res_synth_" + hashlib.sha256(key.encode()).hexdigest()[:16]  # deterministic fallback
 
-def batch_generator(df: pd.DataFrame, batch_size: int = 1000, max_rows: int = 5000) -> Generator[pd.DataFrame, None, None]:
+def batch_generator(
+        df: pd.DataFrame, 
+        batch_size: int = 1000, 
+        max_rows: Optional[int] = None
+    ) -> Generator[pd.DataFrame, None, None]:
     total_input_rows = len(df)
-    if total_input_rows > max_rows:
-        logger.warning(f"Dataset size ({total_input_rows}) exceeds max_rows limit ({max_rows}). Truncating dataset.")
+    if max_rows and total_input_rows > max_rows:
+        logger.warning(f"Truncating input from {total_input_rows} to {max_rows} rows (HYROX_MAX_ROWS)")
         df = df.head(max_rows)
         total_input_rows = max_rows
         
@@ -148,7 +152,7 @@ def main():
     logger.info(f"Initializing Snowflake Snowpark session {session} for ingestion runner...")
 
     season_num = int(os.getenv("HYROX_SEASON", "8"))
-    max_rows = int(os.getenv("MAX_ROWS", "5000"))
+    max_rows = int(os.getenv("HYROX_MAX_ROWS", "0")) or None
     table_name = f"hyrox_raw_season_{season_num}"
 
 
@@ -198,16 +202,7 @@ def main():
     logger.info(f"Successfully fetched raw dataset containing {len(df_raw)} records.")
 
     logger.info(f"Ensuring target bronze table {table_name} exists and truncating prior snapshot...")
-    session.sql(f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
-            athlete_id VARCHAR,
-            name VARCHAR,
-            season INT,
-            location VARCHAR,
-            total_time_minutes FLOAT,
-            division VARCHAR
-        )
-    """).collect()
+
     session.sql(f"TRUNCATE TABLE {table_name}").collect()
 
     loaded_batches = 0
