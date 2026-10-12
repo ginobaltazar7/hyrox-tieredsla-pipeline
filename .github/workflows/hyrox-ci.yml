@@ -1,0 +1,66 @@
+name: "Hyrox Data Contract & Model CI"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'data_contracts/**'
+      - 'dbt_project/**'
+      - 'scripts/**'
+      - 'sql/**'
+      - '.github/workflows/hyrox-ci.yml'
+
+jobs:
+  lint:
+    name: "Lint SQL and contracts (no credentials needed)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: "Install lint tools"
+        run: pip install sqlfluff datacontract-cli
+
+      - name: "Lint plain SQL files (Snowflake dialect)"
+        run: sqlfluff lint sql/ --dialect snowflake
+
+      - name: "Validate data contract files"
+        run: datacontract lint data_contracts/hyrox_pacing_obt_contract.yaml
+
+      # TODO: dbt-model SQL lint needs the dbt templater (dbt-snowflake + profiles).
+      # Add `sqlfluff lint dbt_project/models/ --dialect snowflake --templater dbt`
+      # once CI has Snowflake credentials; see contract-test job below.
+
+  contract-test:
+    name: "Test contracts against Snowflake"
+    runs-on: ubuntu-latest
+    needs: lint
+    # Only runs when Snowflake CI credentials are configured as repo secrets.
+    if: ${{ secrets.SNOWFLAKE_ACCOUNT != '' }}
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: "Install datacontract-cli"
+        run: pip install datacontract-cli
+
+      - name: "Run data contract tests"
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+        run: datacontract test data_contracts/hyrox_pacing_obt_contract.yaml --server production

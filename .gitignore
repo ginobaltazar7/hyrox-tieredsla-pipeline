@@ -9,3 +9,4 @@ target/
 dbt_packages/
 .vscode/
 dbt_project/.user.yml
+.DS_Store

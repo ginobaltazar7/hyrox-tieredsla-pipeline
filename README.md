@@ -44,6 +44,8 @@ To accommodate the SLA, the architecture splits ingestion and transformation pip
 
 - **Semantic & Graph Layer:** Apache Ossie portable YAML semantic models and Snowflake-to-Neo4j graph connectors.
 
+- **Operations:** Daily pipeline healthcheck. See [RUNBOOK.md](RUNBOOK.md).
+
 ## Native Snowflake Deployment Guide
 
 Rebuilding after an expired trial? See [RUNBOOK.md](RUNBOOK.md) for the full account-level checklist — trial signup, credential handling, and verification.
