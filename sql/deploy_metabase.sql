@@ -11,7 +11,7 @@ CREATE OR REPLACE SERVICE SPORTS_ANALYTICS_DB.GOLD_MARKETING.metabase_service
   spec:
     containers:
       - name: metabase
-        image: <SNOWFLAKE_ACCOUNT>.registry.snowflakecomputing.com/sports_analytics_db/gold_marketing/metabase_repo/metabase:v12
+        image: __REGISTRY_URL__/sports_analytics_db/gold_marketing/metabase_repo/metabase:v12
         env:
           MB_DB_TYPE: h2
     endpoints:

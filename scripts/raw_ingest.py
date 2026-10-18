@@ -7,13 +7,13 @@
 import logging
 import os
 import sys
-from typing import Generator, Optional
+from typing import Generator, Optional, Any
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from pydantic import BaseModel, Field, ValidationError
 import pyrox
-from utils.sanitizers import safe_int, safe_float
+from utils.sanitizers import safe_int, safe_float, parse_split_minutes
 from utils.session import get_snowpark_session
 import hashlib
 
@@ -69,14 +69,22 @@ class HyroxRecordModel(BaseModel):
     work_time: Optional[float] = None
     best_run_lap: Optional[float] = None
 
-def derive_athlete_id(name, gender, nationality, age_group) -> str:
+def derive_athlete_id(
+        name: str, 
+        gender: str, 
+        nationality: str, 
+        age_group: str
+) -> str:
     # Identity rule v1 (best-effort, documented). Known limitations:
     #  - age_group transitions (athlete ages up) split one human into two IDs
     #  - common name+demographics can merge two humans into one
     key = "|".join(s.strip().lower() for s in (name, gender, nationality, age_group))
     return "ath_" + hashlib.sha256(key.encode()).hexdigest()[:16]
 
-def derive_result_id(source_result_id, event_id, name, division, total_time) -> str:
+def derive_result_id(
+        source_result_id: Any, 
+        event_id: str, 
+        name: str, division: str, total_time: float) -> str:
     if pd.notna(source_result_id) and str(source_result_id).strip():
         return str(source_result_id)          # prefer the source's own ID
     key = "|".join(str(v) for v in (event_id, name, division, total_time))
@@ -114,7 +122,10 @@ def batch_generator(
                 division = str(row.get("division", "OPEN")).strip() if pd.notna(row.get("division")) else "OPEN"
                 event_id = str(row.get("event_id")).strip() if pd.notna(row.get("event_id")) else ""
 
-                splits = {f: safe_float(row.get(f)) for f in SPLIT_FIELDS}
+                # Station splits: mixed source types ('H:MM:SS' text vs numeric minutes).
+                # parse_split_minutes normalizes to minutes and returns None (NULL) for
+                # missing/unparseable values — never 0.0, which would distort Q1/Q2 charts.
+                splits = {f: parse_split_minutes(row.get(f)) for f in SPLIT_FIELDS}
 
                 record = HyroxRecordModel(
                     result_id=derive_result_id(row.get("source_result_id"), event_id, name, division, row.get("total_time")),

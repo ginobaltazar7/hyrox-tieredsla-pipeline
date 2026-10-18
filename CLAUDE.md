@@ -14,11 +14,11 @@ The RUNBOOK covers *how to rebuild*; this file covers *how not to break things*.
 
 - `source_result_id` is lineage only (~698K nulls observed). Never use it as a join key or grain.
 
-## Gold ownership (unresolved — check before touching)
+## Gold ownership (resolved 2026-10-12 — dbt owns it)
 
-- Exactly ONE writer may publish `GOLD_MARKETING.pacing_obt`: either the WAP script's Publish stage (`scripts/wap_transforms.py`) or dbt's gold models but not both.
+- Exactly ONE writer may publish `GOLD_MARKETING.pacing_obt`: dbt's gold models (`dbt_project/models/gold_marketing/pacing_obt.sql`, `SELECT * FROM stg_hyrox_races`).
 
-- Today dbt owns it (`pacing_obt.sql` is `SELECT * FROM stg_hyrox_races`). If WAP ever takes over, re-verify `data_contracts/hyrox_pacing_obt_contract.yaml` first.
+- The WAP script's Publish stage (`scripts/wap_transforms.py`) writes its verified 7-column staging set to `GOLD_MARKETING.pacing_obt_wap_verified` — never to `pacing_obt`. Its shape (no `result_id`, no station splits) does not satisfy `data_contracts/hyrox_pacing_obt_contract.yaml`.
 
 ## Ossie semantic model (do not hand-maintain)
 
@@ -30,7 +30,9 @@ The RUNBOOK covers *how to rebuild*; this file covers *how not to break things*.
 
 ## Account references (never hardcode)
 
-- Use the `<SNOWFLAKE_ACCOUNT>` placeholder in `spcs/*.yml`, `sql/04_task_dag.sql`, and `sql/deploy_metabase.sql`. Substitute at deploy time: `sed -i "s/<SNOWFLAKE_ACCOUNT>/$SNOWFLAKE_ACCOUNT/g" spcs/*.yml sql/04_task_dag.sql sql/deploy_metabase.sql`
+- Use the `__REGISTRY_URL__` placeholder in `spcs/*.yml`, `sql/04_task_dag.sql`, and `sql/deploy_metabase.sql`. `.github/workflows/deploy.yml` injects the `SNOWFLAKE_REGISTRY` GitHub secret at deploy time (secret value = the new account's registry hostname, e.g. `<account-identifier>.registry.snowflakecomputing.com`). Update that secret whenever the account is rebuilt.
+
+- For manual (non-Actions) runs: `export SNOWFLAKE_REGISTRY=<registry hostname>` then `sed -i "s|__REGISTRY_URL__|$SNOWFLAKE_REGISTRY|g" spcs/*.yml sql/04_task_dag.sql sql/deploy_metabase.sql`
 
 - On macOS, `sed -i` requires a backup suffix (`sed -i '' ...`); the GNU form above is for Linux.
 

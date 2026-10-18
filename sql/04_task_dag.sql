@@ -16,7 +16,7 @@ AS
     spec:
       containers:
         - name: ingest-runner
-          image: <SNOWFLAKE_ACCOUNT>.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:v12
+          image: __REGISTRY_URL__/sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:v12
           env:
             HYROX_SEASON: "8"
             HYROX_MAX_ROWS: "0"
@@ -35,7 +35,7 @@ AS
     spec:
       containers:
         - name: dbt-silver
-          image: <SNOWFLAKE_ACCOUNT>.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:v12
+          image: __REGISTRY_URL__/sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:v12
           command: ["sh", "-c", "dbt run --select silver --profiles-dir . && dbt test --select silver --profiles-dir ."]
     $$;
 
@@ -51,7 +51,7 @@ AS
     spec:
       containers:
         - name: wap-runner
-          image: <SNOWFLAKE_ACCOUNT>.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:v12
+          image: __REGISTRY_URL__/sports_analytics_db/raw_bronze/dbt_repo/ingest-runner:v12
           command: ["python", "scripts/wap_transforms.py"]
     $$;
 
@@ -67,7 +67,7 @@ AS
     spec:
       containers:
         - name: dbt-gold
-          image: <SNOWFLAKE_ACCOUNT>.registry.snowflakecomputing.com/sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:v12
+          image: __REGISTRY_URL__/sports_analytics_db/raw_bronze/dbt_repo/dbt-runner:v12
           command: ["sh", "-c", "dbt run --select gold --profiles-dir . && dbt test --select gold --profiles-dir ."]
     $$;
 

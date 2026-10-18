@@ -52,8 +52,13 @@ def main():
         raise ValueError(f"WAP GATE HALTED: {anomaly_rate * 100:.2f}% anomaly rate exceeds threshold.")
     
     logger.info("Publish Stage: Promoting verified records to Gold tiers via server-side SQL...")
+    # GOLD OWNERSHIP (settled 2026-10-12): dbt owns GOLD_MARKETING.pacing_obt
+    # (dbt_project/models/gold_marketing/pacing_obt.sql). The WAP script must NEVER
+    # write a table named pacing_obt — its 7-column staging shape (no result_id, no
+    # splits) would clobber the dbt gold. It publishes the verified staging set under
+    # a distinct name instead.
     session.sql("""
-        CREATE OR REPLACE TABLE SPORTS_ANALYTICS_DB.GOLD_MARKETING.pacing_obt AS 
+        CREATE OR REPLACE TABLE SPORTS_ANALYTICS_DB.GOLD_MARKETING.pacing_obt_wap_verified AS
         SELECT * FROM SPORTS_ANALYTICS_DB.SILVER.stg_race_performance_wap
     """).collect()
     
