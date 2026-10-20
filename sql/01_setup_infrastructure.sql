@@ -32,9 +32,9 @@ CREATE COMPUTE POOL IF NOT EXISTS dbt_compute_pool
 ALTER COMPUTE POOL dbt_compute_pool RESUME;
 ALTER COMPUTE POOL metabase_compute_pool RESUME;
 
--- Check if compute pool is active and ready
-SHOW COMPUTE POOLS LIKE 'dbt_compute_pool';
-SHOW COMPUTE POOLS LIKE 'metabase_compute_pool';
+-- Check if compute pool is active and ready, unless AUTO_RESUME is enabled (which it is in this case), uncomment otherwise
+-- SHOW COMPUTE POOLS LIKE 'dbt_compute_pool';
+-- SHOW COMPUTE POOLS LIKE 'metabase_compute_pool';
 
 -- Verify image repository contains the latest runner images
 SHOW IMAGES IN IMAGE REPOSITORY SPORTS_ANALYTICS_DB.RAW_BRONZE.dbt_repo;

@@ -20,14 +20,33 @@ SNOWFLAKE_PASSWORD=<password>
 
 ## Rebuild steps
 1. **Apply all code fixes first.** A freshly created account will get a properly working pipeline.
-2. **Provision infrastructure:** run `sql/01_setup_infrastructure.sql` — database, schemas, stages, tables (single-sourced DDL).
-3. **Ingest:** `python scripts/raw_ingest.py` (or via the dev container: `docker compose -f docker-compose.dev.yml up -d`, then `docker compose exec hyrox-dev python scripts/raw_ingest.py`). Pydantic-validates and loads bronze.
-4. **Transform:** `cd dbt_project && dbt run --profiles-dir . && dbt test --profiles-dir .` — silver/gold plus schema tests.
-5. **Snapshot:** `dbt snapshot --profiles-dir .` — finance audit trail.
-6. **Verify:** row counts match source (~715K rows); `athlete_id` populated (no `UNKNOWN` swarm); station-split columns present; `result_id` unique.
+2. **Provision infrastructure:** run `sql/01_setup_infrastructure.sql` in Snowsight— database, schemas, stages, tables (single-sourced DDL).
+3. **Ingest:** `python scripts/raw_ingest.py` locally (or via the dev container): `docker compose -f docker-compose.dev.yml up -d hyrox-dev`, then `docker compose exec hyrox-dev python scripts/raw_ingest.py`. Pydantic-validates and loads bronze.
+4. **Transform:** `cd dbt_project && dbt run --profiles-dir . && dbt test --profiles-dir .` locally or via the dev container, prepend with `docker compose -f docker-compose.dev.yml exec hyrox-dev bash -c`
+— silver/gold plus schema tests.
+5. **Snapshot:** `cd dbt_project && dbt snapshot --profiles-dir .`  locally or via the dev container, prepend with `docker compose -f docker-compose.dev.yml exec hyrox-dev bash -c` — finance audit trail. If you run into errors, try `cd dbt_project && dbt clean && dbt deps && dbt snapshot --profiles-dir .`
+6. **Verify:** row counts match source (~715K rows) or (~5,000 rows if capped); `athlete_id` populated (no `UNKNOWN` swarm); station-split columns present; `result_id` unique.
+    - `SELECT COUNT(*) FROM SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_RAW_SEASON_8;`
+    - `SELECT sum(case when athlete_id is null then 1 else 0 end) FROM SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_RAW_SEASON_8;`
+    - 
+        ```sql
+            SELECT
+                SUM(CASE WHEN skierg_time IS NULL THEN 1 ELSE 0 END) AS skierg_nulls, 
+                SUM(CASE WHEN skierg_time = 0 THEN 1 ELSE 0 END) AS skierg_zeros,
+                SUM(CASE WHEN sledpush_time IS NULL THEN 1 ELSE 0 END) AS sledpush_nulls,
+                SUM(CASE WHEN sledpush_time = 0 THEN 1 ELSE 0 END) AS sledpush_zeros
+            FROM SPORTS_ANALYTICS_DB.RAW_BRONZE.pacing_obt;
+        ```
+    - 
+        ```sql
+            SELECT
+                count(distinct result_id) as count_result_id,
+                count(*) as count
+            FROM SPORTS_ANALYTICS_DB.RAW_BRONZE.pacing_obt;
+        ```
 7. **Operations Scheduled health checks:** scripts/pipeline_healthcheck.sh runs dbt source freshness and dbt test. Intended for cron (e.g., daily 06:00); requires dbt with a working profiles.yml. Add freshness: blocks to sources.yml to make the freshness check meaningful.
 8. **Schedule (optional):** deploy SPCS images, run `sql/04_task_dag.sql` for the task chain (ingest → dbt silver → WAP gate → dbt gold → Neo4j sync). The image specs use the `__REGISTRY_URL__` placeholder — on push to `main`, `.github/workflows/deploy.yml` injects it from the `SNOWFLAKE_REGISTRY` GitHub secret (value = the account's registry hostname, e.g. `<account-identifier>.registry.snowflakecomputing.com`). **After every rebuild, update that secret to the new account's registry hostname.** For a manual run outside Actions: `export SNOWFLAKE_REGISTRY=<registry hostname> && sed -i "s|__REGISTRY_URL__|$SNOWFLAKE_REGISTRY|g" spcs/*.yml sql/04_task_dag.sql sql/deploy_metabase.sql`
-9. **Redeploy Metabase (optional):** run sql/deploy_metabase.sql (specs aligned: v12, gold_marketing path), grab the endpoint with SHOW ENDPOINTS IN SERVICE ..., then rebuild the dashboards by hand in the UI — the app database doesn't survive an account rebuild, so recreate the charts from the question→chart map in the README.
+9. **Redeploy Metabase (optional):** run sql/deploy_metabase.sql (specs aligned: v12, gold_marketing path), grab the endpoint with SHOW ENDPOINTS IN SERVICE ..., then rebuild the dashboards by hand in the UI — the app database doesn't survive an account rebuild, so recreate the charts from the question→chart map in the README. TODO: fix v0.55 tag, a known issue for the Metabase redeploy step.
 
 ## Coverage
 - two-key identity model (`result_id` = raw grain, `athlete_id` = derived hash)

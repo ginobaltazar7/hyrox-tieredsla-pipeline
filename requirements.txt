@@ -1,4 +1,5 @@
-dbt-snowflake
+dbt-core==1.12.6
+dbt-snowflake==1.12.3
 snowflake-snowpark-python
 pandas
 pyarrow
