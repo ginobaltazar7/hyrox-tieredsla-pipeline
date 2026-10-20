@@ -9,7 +9,8 @@ Every database, table, and transform this pipeline needs is defined in this repo
 ## Prerequisites
 1. A fresh Snowflake trial (different email than any expired trial).
 2. The moment the account is created, save three things in your password manager: **account identifier**, **username**, **password**. 
-3. A `.env` file at repo root (gitignored — never commit it):
+3. Registry hostname for the SNOWFLAKE_REGISTRY secret: in Snowsight, + → SQL File, run SELECT CURRENT_ORGANIZATION_NAME(), CURRENT_ACCOUNT_NAME(); → the secret value is <org>-<account>.registry.snowflakecomputing.com (bare hostname — no https://, no trailing slash). Ground truth if an image repo exists: SHOW IMAGE REPOSITORIES;, copy the hostname from repository_url.
+4. A `.env` file at repo root (gitignored — never commit it):
 
 ```
 SNOWFLAKE_ACCOUNT=<account identifier>
