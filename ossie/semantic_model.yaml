@@ -1,6 +1,36 @@
 version: 0.2.0.dev0
 name: semantic_model
 datasets:
+- name: result_pacing
+  source: SPORTS_ANALYTICS_DB.RAW_BRONZE.q2_station_degradation
+  primary_key:
+  - result_id
+  description: 'Per-result pacing fields for Q2: first-km deviation vs later-station
+    degradation. One row per result.'
+  fields:
+  - name: result_id
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: result_id
+    description: Result grain key, one row per result.
+  - name: division
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: division
+    dimension:
+      is_time: false
+    description: Division, the Q2 grouping dimension.
+  - name: pacing_date
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: pacing_date
+    dimension:
+      is_time: true
+    description: Fixed sentinel date satisfying MetricFlow's required agg_time_dimension.
+      Not an event date; never use for time slicing.
 - name: station_variance
   source: SPORTS_ANALYTICS_DB.RAW_BRONZE.q1_station_variance
   primary_key:
@@ -26,6 +56,19 @@ datasets:
     description: Fixed sentinel date satisfying MetricFlow's required agg_time_dimension.
       Not an event date; never use for time slicing.
 metrics:
+- name: avg_first_km_deviation
+  expression:
+    dialects:
+    - dialect: ANSI_SQL
+      expression: AVG(result_pacing.first_km_deviation)
+  description: Average first-km deviation (run1 minus athlete own mean run time) by
+    division.
+- name: avg_station_degradation
+  expression:
+    dialects:
+    - dialect: ANSI_SQL
+      expression: AVG(result_pacing.station_degradation)
+  description: Average station degradation (wall balls minus SkiErg) by division.
 - name: transition_time_variance_elite_pro
   expression:
     dialects:

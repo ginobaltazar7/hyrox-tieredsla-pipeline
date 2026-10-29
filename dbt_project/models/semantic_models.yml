@@ -23,5 +23,39 @@ models:
         type: simple
         agg: sum
         expr: transition_time_variance
+  - name: q2_station_degradation
+    description: "Per-result pacing fields for Q2: first-km deviation vs later-station degradation. One row per result."
+    agg_time_dimension: pacing_date
+    columns:
+      - name: result_id
+        description: "Result grain key, one row per result."
+        entity:
+          type: primary
+          name: result_id
+      - name: division
+        description: "Division, the Q2 grouping dimension."
+        dimension:
+          type: categorical
+      - name: pacing_date
+        description: "Fixed sentinel date satisfying MetricFlow's required agg_time_dimension. Not an event date; never use for time slicing."
+        granularity: day
+        dimension:
+          type: time
+    metrics:
+      - name: avg_first_km_deviation
+        description: "Average first-km deviation (run1 minus athlete own mean run time) by division."
+        label: "Average First-Km Deviation"
+        type: simple
+        agg: average
+        expr: first_km_deviation
+      - name: avg_station_degradation
+        description: "Average station degradation (wall balls minus SkiErg) by division."
+        label: "Average Station Degradation"
+        type: simple
+        agg: average
+        expr: station_degradation
+    semantic_model:
+      name: result_pacing
+      enabled: true
 
 

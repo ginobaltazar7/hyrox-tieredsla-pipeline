@@ -42,7 +42,7 @@ To accommodate the SLA, the architecture splits ingestion and transformation pip
 
 - **Presentation Layer:** Metabase hosted natively via Snowpark Container Services (SPCS). 
 
-- **Semantic & Graph Layer:** Apache Ossie portable YAML semantic models and Snowflake-to-Neo4j graph connectors.
+- **Semantic & Graph Layer:** dbt semantic models, validated and queried with [MetricFlow](https://docs.getdbt.com/docs/build/build-metrics-intro?version=2) and exported as portable [Apache Ossie](https://github.com/apache/ossie-converters) YAML, and Snowflake-to-Neo4j graph connectors.
 
 - **Operations:** Daily pipeline healthcheck. See [RUNBOOK.md](RUNBOOK.md).
 
