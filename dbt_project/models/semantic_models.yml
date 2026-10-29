@@ -1,0 +1,27 @@
+models:
+  - name: q1_station_variance
+    description: "Per-station variance of Hyrox station split times for the elite-pro union (pro, pro_doubles, elite, elite_doubles; 400 results). One row per station, built from q1_station_long. Note: splits are station work times, not transition times; roxzone is excluded."
+    semantic_model:
+      enabled: true
+      name: station_variance
+    agg_time_dimension: variance_date
+    columns:
+      - name: station
+        description: "Station split name (e.g. SLEDPULL_TIME), one of the 8 station splits."
+        entity:
+          type: primary
+          name: station
+      - name: variance_date
+        description: "Fixed sentinel date satisfying MetricFlow's required agg_time_dimension. Not an event date; never use for time slicing."
+        granularity: day
+        dimension:
+          type: time
+    metrics:
+      - name: transition_time_variance_elite_pro
+        description: "Sample variance of station split times across the elite-pro union, by station. Passthrough: sum over the precomputed per-station variance, one row per station, so sum returns the value unchanged. Group by station only; never sum across stations."
+        label: "Transition Time Variance, Elite/Pro"
+        type: simple
+        agg: sum
+        expr: transition_time_variance
+
+

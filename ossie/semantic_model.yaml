@@ -1,31 +1,37 @@
-# TODO: Regenerate this file from dbt semantic models — do not hand-maintain.
-#   1. Settle gold ownership (one writer for GOLD_MARKETING.pacing_obt: WAP script or dbt).
-#   2. Define dbt semantic models on the gold marts
-#      (dbt_project/models/semantic_models/hyrox_semantic_models.yml).
-#   3. Run: dbt parse && ossie-dbt msi-to-ossie -i target/semantic_manifest.json -o ossie/semantic_model.yaml
-
-YAML
-version: 0.2
-semantic_model:
-  name: hyrox_performance_model
-  description: "Apache Ossie definition mapped from dbt models for HYROX race analytics."
-  entities:
-    - name: athlete
-      type: primary
-      expr: athlete_id
-  dimensions:
-    - name: location
-      type: categorical
-      expr: location
-    - name: division
-      type: categorical
-      expr: division
-  metrics:
-    - name: total_finishes
-      type: simple
-      expr: athlete_id
-      agg: count
-    - name: average_total_time
-      type: simple
-      expr: total_time_minutes
-      agg: average
+version: 0.2.0.dev0
+name: semantic_model
+datasets:
+- name: station_variance
+  source: SPORTS_ANALYTICS_DB.RAW_BRONZE.q1_station_variance
+  primary_key:
+  - station
+  description: 'Per-station variance of Hyrox station split times for the elite-pro
+    union (pro, pro_doubles, elite, elite_doubles; 400 results). One row per station,
+    built from q1_station_long. Note: splits are station work times, not transition
+    times; roxzone is excluded.'
+  fields:
+  - name: station
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: station
+    description: Station split name (e.g. SLEDPULL_TIME), one of the 8 station splits.
+  - name: variance_date
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: variance_date
+    dimension:
+      is_time: true
+    description: Fixed sentinel date satisfying MetricFlow's required agg_time_dimension.
+      Not an event date; never use for time slicing.
+metrics:
+- name: transition_time_variance_elite_pro
+  expression:
+    dialects:
+    - dialect: ANSI_SQL
+      expression: SUM(station_variance.transition_time_variance)
+  description: 'Sample variance of station split times across the elite-pro union,
+    by station. Passthrough: sum over the precomputed per-station variance, one row
+    per station, so sum returns the value unchanged. Group by station only; never
+    sum across stations.'

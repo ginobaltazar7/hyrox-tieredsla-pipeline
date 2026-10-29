@@ -1,0 +1,8 @@
+models:
+  - name: metricflow_time_spine
+    description: "Daily time spine for MetricFlow. Infrastructure only; not a Hyrox metric and not part of the Q1 variance model."
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        granularity: day
