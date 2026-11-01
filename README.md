@@ -155,6 +155,55 @@ To accommodate the SLA, the architecture splits ingestion and transformation pip
 
 - **Operations:** Daily pipeline healthcheck. See [RUNBOOK.md](RUNBOOK.md).
 
+## Lineage and Neo4j knowledge graph
+
+- **Neo4j, Snowflake side:** custom schema lineage graph, built by
+  `scripts/neo4j_load_schema.py`. Nodes are Table, Column, Model, and Metric;
+  edges are CONTAINS, DERIVED_FROM, DEFINED_ON, and FEEDS. The graph is
+  rebuilt on each run, gold nodes are tagged `status: 'verified'` and bronze
+  nodes `status: 'unverified'`, and default queries filter to verified only.
+  The original athlete graph in `sql/05_neo4j_graph_queries.sql` is a separate
+  layer, not replaced by this loader, and it must also source only
+  WAP-verified records once finished.
+
+- **Unity Catalog, Databricks side:** built-in table and column lineage in
+  Catalog Explorer for the Databricks port. No custom graph is needed there
+  for lineage alone.
+- **Apache Jena, later only:** formal ontology and inference, if and when
+  lineage alone is not enough. Not part of v1.
+
+### Sample questions the knowledge graph answers
+
+**Schema lineage — from `scripts/neo4j_queries.cypher`:**
+
+- "What feeds `q1_station_variance`?" — upstream lineage, verified only.
+  Walk DERIVED_FROM edges back to `q1_station_long`, then `pacing_obt`.
+
+- "What breaks if `total_time_minutes` changes?" — downstream impact,
+  verified only. Every model and metric that derives from that column.
+
+- "Which metrics depend on `division`?" — metric dependency, verified only.
+  `avg_first_km_deviation` and `avg_station_degradation` via
+  `q2_station_degradation`.
+
+Remove the `status: 'verified'` filter in any of those queries for the
+full lineage all the way to bronze, tagged `status: 'unverified'`.
+
+**Athlete graph — from `sql/05_neo4j_graph_queries.sql`, once finished:**
+
+- "Which athletes ran which stations, and how fast?" — athlete to station
+  edges, with time on the edge, not just in a table.
+
+- "How does station time vary by division?" — the graph form of Q1, once
+  station splits are merged as Station nodes.
+  
+- "Who degraded most from ski erg to wall balls?" — the graph form of Q2,
+  once pacing splits are merged.
+
+Note: the athlete graph is not yet runnable — its UNWIND / MERGE body is
+still a placeholder, and its source must move from `pacing_obt` to
+`pacing_obt_wap_verified` before it loads anything.
+
 ## Native Snowflake Deployment Guide
 
 Rebuilding after an expired trial? See [RUNBOOK.md](RUNBOOK.md) for the full account-level checklist — trial signup, credential handling, and verification.
