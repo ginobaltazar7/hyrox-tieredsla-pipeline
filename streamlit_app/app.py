@@ -283,10 +283,15 @@ with st.expander("Registration audit (Q5)", expanded=False):
     )
 with st.expander("About the sample", expanded=False):
     st.markdown(
+        "- Source: public HYROX race results via the unofficial pyrox-client "
+        "(`get_season(season=8)`). Pyrox is not affiliated with, endorsed, or sponsored by HYROX.\n"
         "- 5,000 Season 8 race results.\n"
         "- Times are in minutes.\n"
-        "- Missing times mean not recorded. They are excluded, never treated as zero.\n"
+        "- Missing times mean not recorded, are excluded, and not treated as zero.\n"
         "- Doubles and relay results count once per team."
     )
 
-footnote([f"Data source: {data.data_source_label()}. Refreshed at most once an hour."])
+footnote([
+    f"Data source: {data.data_source_label()} — public HYROX results via pyrox-client, 5,000-row Season 8 sample. Refreshed at most once an hour.",
+    'Code and full data notes: <a href="https://github.com/ginobaltazar7/hyrox-tieredsla-pipeline" target="_blank">github.com/ginobaltazar7/hyrox-tieredsla-pipeline</a>',
+])
