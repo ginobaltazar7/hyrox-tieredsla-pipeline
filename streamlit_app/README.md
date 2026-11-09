@@ -22,7 +22,7 @@ Set these on Render (never in code or the repo):
 
 | Name | Value |
 | --- | --- |
-| `SNOWFLAKE_ACCOUNT` | account identifier |
+| `SNOWFLAKE_ACCOUNT` | account identifier, `<org>-<account>` format, e.g. `PIIZXJY-VRB18725` for this repo's live deploy — not the locator `CURRENT_ACCOUNT()` returns |
 | `SNOWFLAKE_USER` | `HYROX_STREAMLIT_APP` |
 | `SNOWFLAKE_PRIVATE_KEY` | full contents of `rsa_key.p8`, including the BEGIN and END lines |
 | `SNOWFLAKE_ROLE` | `HYROX_APP_READER` |
@@ -32,6 +32,8 @@ Set these on Render (never in code or the repo):
 
 The key is unencrypted (generated with `-nocrypt`), so no passphrase is needed. If the key is pasted with literal `\n` instead of line breaks, the app restores them.
 
+Make the key pair on your own machine in a folder that survives a reboot — never in a temp folder — and never commit the private key. If you make a new key pair later, update the user too: `ALTER USER HYROX_STREAMLIT_APP SET RSA_PUBLIC_KEY = '<the long middle line of the public key>'` — making a new pair alone isn't enough, Snowflake still holds the old public key until you do that.
+
 ## Render settings
 
 - **Build command:** `pip install -r streamlit_app/requirements.txt`
@@ -39,6 +41,8 @@ The key is unencrypted (generated with `-nocrypt`), so no passphrase is needed. 
 - **Python version:** 3.11 or 3.12 (set `PYTHON_VERSION` on Render if needed)
 
 ## Run locally
+
+Use Python 3.11 or 3.12 locally too (a venv). On a Mac with Python 3.14, Altair 5 fails on import — don't edit the `altair>=5,<6` pin in `requirements.txt` to work around it.
 
 Against Snowflake (export the 7 variables first):
 
@@ -64,3 +68,5 @@ In preview mode the correlation table is rebuilt from the CSV with the same logi
 - **Small groups:** Elite and Elite Doubles (n = 29) show a warning.
 - **Errors:** if Snowflake is unreachable, visitors see a short message and the technical detail sits in a collapsed box.
 - **Grants:** dbt table models are recreated on each run, which drops SELECT grants. Keep `grants={'select': ['HYROX_APP_READER']}` on the three models so the app keeps access.
+
+<sub>Parts of this project, including documentation and analysis, were developed with assistance from Naru, an AI assistant.</sub>
