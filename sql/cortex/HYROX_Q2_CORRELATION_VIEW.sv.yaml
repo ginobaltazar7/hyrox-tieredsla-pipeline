@@ -1,0 +1,33 @@
+name: HYROX_Q2_CORRELATION_VIEW
+description: "Q2 correlation only, one row per division plus a pooled row. Do not average the averages again, do not sum N."
+tables:
+  - name: Q2C
+    base_table:
+      database: SPORTS_ANALYTICS_DB
+      schema: RAW_BRONZE
+      table: Q2_DEVIATION_CORRELATION
+    primary_key:
+      columns:
+        - DIVISION
+    dimensions:
+      - name: DIVISION
+        expr: q2c.DIVISION
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+    facts:
+      - name: AVG_DEGRADATION
+        expr: q2c.AVG_DEGRADATION
+        data_type: FLOAT
+        access_modifier: public_access
+      - name: AVG_DEVIATION
+        expr: q2c.AVG_DEVIATION
+        data_type: FLOAT
+        access_modifier: public_access
+      - name: CORR_DEV_VS_DEGRADATION
+        expr: q2c.CORR_DEV_VS_DEGRADATION
+        data_type: FLOAT
+        access_modifier: public_access
+      - name: "N"
+        expr: q2c.N
+        data_type: "NUMBER(18,0)"
+        access_modifier: public_access

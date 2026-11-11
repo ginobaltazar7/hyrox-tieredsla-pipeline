@@ -14,9 +14,7 @@ models:
   sports_analytics:
     silver:
       +materialized: incremental
-      +unique_key:
-        - athlete_id
-        - season
+      +unique_key: result_id
     gold_marketing:
       +materialized: table
 flags:

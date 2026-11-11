@@ -1,0 +1,30 @@
+name: HYROX_Q1_AVERAGE_VIEW
+description: "Q1 average only, one row per result per station, elite/pro, 3,200 rows."
+tables:
+  - name: Q1L
+    base_table:
+      database: SPORTS_ANALYTICS_DB
+      schema: RAW_BRONZE
+      table: Q1_STATION_LONG
+    primary_key:
+      columns:
+        - RESULT_ID
+        - STATION
+    dimensions:
+      - name: DIVISION
+        expr: q1l.DIVISION
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: STATION
+        expr: q1l.STATION
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+    facts:
+      - name: TRANSITION_TIME
+        expr: q1l.TRANSITION_TIME
+        data_type: FLOAT
+        access_modifier: public_access
+    metrics:
+      - name: AVG_TRANSITION_TIME
+        expr: AVG(q1l.transition_time)
+        access_modifier: public_access

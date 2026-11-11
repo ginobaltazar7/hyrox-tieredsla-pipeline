@@ -5,9 +5,12 @@ Everything this pipeline needs i.e. database, table, and transform, lives in thi
 ## When to use this
 - Trial has expired (account gated behind the upgrade page)
 - New environment for a demo, a collaborator, or clean-room verification
+- Rebuilding in a new trial or paid account after the original trial ended (Nov 2026) — the parts that only lived in the old account (Cortex views, app access, verification queries) were rescued into `sql/` on 2026-11-10 and are rebuilt by the steps below.
+
+> If you upgrade the original trial account instead of starting fresh, the data and views are preserved — no rebuild is needed. This runbook is for a fresh account.
 
 ## Prerequisites
-1. A fresh Snowflake trial (different email than any expired trial).
+1. A fresh Snowflake trial or paid account (a trial needs a different email than any expired trial).
 2. The moment the account is created, save three things in your password manager: **account identifier**, **username**, **password**. 
 3. Registry hostname for the SNOWFLAKE_REGISTRY secret: in Snowsight, + → SQL File, run SELECT CURRENT_ORGANIZATION_NAME(), CURRENT_ACCOUNT_NAME(); → the secret value is <org>-<account>.registry.snowflakecomputing.com (bare hostname — no https://, no trailing slash). Ground truth if an image repo exists: SHOW IMAGE REPOSITORIES;, copy the hostname from repository_url.
 4. A `.env` file at repo root (gitignored — never commit it):
@@ -46,8 +49,11 @@ SNOWFLAKE_PASSWORD=<password>
                 count(*) as count
             FROM SPORTS_ANALYTICS_DB.RAW_BRONZE.pacing_obt;
         ```
-7. **Operations Scheduled health checks:** Run `scripts/pipeline_healthcheck.sh` locally, or via the dev container: `docker compose -f docker-compose.dev.yml exec hyrox-dev bash -c "scripts/pipeline_healthcheck.sh"` — runs dbt source freshness and dbt test. Intended for cron (e.g., daily 06:00) and requires dbt with a working profiles.yml. Add freshness limits to `sources.yml` first, e.g. to warn if the data is more than a day old. Without those limits, the freshness check will pass even when the data is stale.
-8. **Schedule the task chain (optional):** This sets up the automatic run: ingest → dbt silver → dbt gold → Neo4j sync. Run sql/04_task_dag.sql. The WAP gate sits outside the dbt DAG by design: data is written unverified first and promoted to `pacing_obt_wap_verified` only if the audit passes.
+    - **Then check the frozen Q1/Q2 numbers, not just the counts.** The Q1 variance table must have 8 rows with Sled Pull at 6.70; the Q2 degradation table 5,000 rows; the Q2 correlation table 7 rows with the pooled row at n = 5,000, −1.02 / 1.37 / −0.16. The hand-SQL versions of these checks live in `sql/verification/` (`UnpivotSplitName.sql`, `q2_station_time_degradation.sql`, and the Q5 duplicate checks) — run those, and the dbt tables and the hand SQL must agree before you call the rebuild done.
+7. **Create the Cortex semantic views.** After the dbt build (steps 4–6) — the four underlying tables (`Q1_STATION_LONG`, `Q1_STATION_VARIANCE`, `Q2_STATION_DEGRADATION`, `Q2_DEVIATION_CORRELATION`) must exist first. Run `sql/cortex_semantic_views.sql` in Snowsight — the four single-table views the Cortex Analyst demo is built on. The file sets the `SPORTS_ANALYTICS_DB.RAW_BRONZE` context itself with USE statements. Do not use the combined view in `sql/cortex_semantic_views_combined_and_test.sql` for the demo; it is superseded by the split views and kept as reference only. The YAML sources for these views live in `sql/cortex/`. Cortex Analyst also needs its database role: `GRANT DATABASE ROLE SNOWFLAKE.CORTEX_ANALYST_USER TO ROLE ACCOUNTADMIN;`
+8. **Create the read-only app user.** Generate the key pair first, replace the `<RSA_PUBLIC_KEY_MIDDLE_LINE>` placeholder in `sql/streamlit_access.sql`, then run it in Snowsight — it creates the read-only role and the service user, grants read access to the three app tables only, and sets the RSA public key. Re-running it will not update the key (`CREATE USER IF NOT EXISTS`); rotate with `ALTER USER` instead. Full detail, including the key-pair trap (make the pair in a folder that survives reboot, never a temp folder, never commit it), is in `streamlit_app/README.md`.
+9. **Operations Scheduled health checks:** Run `scripts/pipeline_healthcheck.sh` locally, or via the dev container: `docker compose -f docker-compose.dev.yml exec hyrox-dev bash -c "scripts/pipeline_healthcheck.sh"` — runs dbt source freshness and dbt test. Intended for cron (e.g., daily 06:00) and requires dbt with a working profiles.yml. Add freshness limits to `sources.yml` first, e.g. to warn if the data is more than a day old. Without those limits, the freshness check will pass even when the data is stale.
+10. **Schedule the task chain:** This sets up the automatic run: ingest → dbt silver → dbt gold → Neo4j sync. Run sql/04_task_dag.sql. The WAP gate sits outside the dbt DAG by design: data is written unverified first and promoted to `pacing_obt_wap_verified` only if the audit passes.
     - **How the images get their address:** the SPCS specs use a placeholder, __REGISTRY_URL__. On a push to main, GitHub Actions fills it in from the SNOWFLAKE_REGISTRY secret — that's your account's registry hostname, e.g. <org>-<account>.registry.snowflakecomputing.com.
     - **After every rebuild, update that secret.** A new account means a new registry hostname, so the old secret will point at the old account.
     - **If you're running it by hand, outside Actions:** set the hostname yourself first, then replace the placeholder in the files: 
@@ -58,7 +64,7 @@ SNOWFLAKE_PASSWORD=<password>
 
     ```
     Run the `sed` command in the dev container (GNU sed). On macOS, `sed -i` needs a backup suffix, e.g. `sed -i ''`.
-9. **Presentation — Streamlit on Render.** The app lives in streamlit_app/ and runs on Render — see the README, "Recreate this deployment from scratch". 
+11. **Presentation — Streamlit on Render.** The app lives in streamlit_app/ and runs on Render — see the README, "Recreate this deployment from scratch". 
 
 ## What this pipeline covers
 - **Identity has two keys:** Every result has its own `result_id`, and every athlete gets an `athlete_id` built from their details. That's how we tell results and people apart.

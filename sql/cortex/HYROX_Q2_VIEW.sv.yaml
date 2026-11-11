@@ -1,0 +1,32 @@
+name: HYROX_Q2_VIEW
+description: "Q2 per-result only, 5,000 rows, all divisions."
+tables:
+  - name: Q2D
+    base_table:
+      database: SPORTS_ANALYTICS_DB
+      schema: RAW_BRONZE
+      table: Q2_STATION_DEGRADATION
+    primary_key:
+      columns:
+        - RESULT_ID
+    dimensions:
+      - name: DIVISION
+        expr: q2d.DIVISION
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+    facts:
+      - name: FIRST_KM_DEVIATION
+        expr: q2d.FIRST_KM_DEVIATION
+        data_type: FLOAT
+        access_modifier: public_access
+      - name: STATION_DEGRADATION
+        expr: q2d.STATION_DEGRADATION
+        data_type: FLOAT
+        access_modifier: public_access
+    metrics:
+      - name: AVG_FIRST_KM_DEVIATION
+        expr: AVG(q2d.first_km_deviation)
+        access_modifier: public_access
+      - name: AVG_STATION_DEGRADATION
+        expr: AVG(q2d.station_degradation)
+        access_modifier: public_access

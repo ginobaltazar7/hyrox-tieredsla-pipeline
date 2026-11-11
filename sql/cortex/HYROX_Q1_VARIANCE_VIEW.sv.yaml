@@ -1,0 +1,28 @@
+name: HYROX_Q1_VARIANCE_VIEW
+description: "Q1 variance only, one row per station, elite/pro, 3,200 splits behind it."
+tables:
+  - name: Q1V
+    base_table:
+      database: SPORTS_ANALYTICS_DB
+      schema: RAW_BRONZE
+      table: Q1_STATION_VARIANCE
+    primary_key:
+      columns:
+        - STATION
+    dimensions:
+      - name: STATION
+        description: "Hyrox station, for example SLEDPULL_TIME, WALLBALLS. Group by this column."
+        expr: q1v.STATION
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+    facts:
+      - name: N_OBS
+        description: Results behind the station variance. 400 for every station.
+        expr: q1v.N_OBS
+        data_type: "NUMBER(18,0)"
+        access_modifier: public_access
+      - name: TRANSITION_TIME_VARIANCE
+        description: Precomputed sample VARIANCE of station transition time. Group by station only. Do NOT sum across stations.
+        expr: q1v.TRANSITION_TIME_VARIANCE
+        data_type: FLOAT
+        access_modifier: public_access

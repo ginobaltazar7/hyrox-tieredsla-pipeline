@@ -1,0 +1,44 @@
+name: Q1_TEST_SEMANTIC_VIEW
+description: "Minimal Cortex Analyst test view: Q1 station variance only. Not the full demo view."
+tables:
+  - name: Q1
+    description: "One row per station, elite/pro only. Station-transition variance, proved in Snowflake."
+    base_table:
+      database: SPORTS_ANALYTICS_DB
+      schema: RAW_BRONZE
+      table: Q1_STATION_VARIANCE
+    primary_key:
+      columns:
+        - STATION
+    dimensions:
+      - name: STATION
+        description: "Hyrox station name, for example SLEDPULL, WALLBALLS, SKIERG. Group by this column."
+        expr: q1.STATION
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+    facts:
+      - name: N_OBS
+        description: "Number of elite/pro results behind this station variance. 400 for every station."
+        expr: q1.N_OBS
+        data_type: "NUMBER(18,0)"
+        access_modifier: public_access
+      - name: TRANSITION_TIME_VARIANCE
+        description: "Precomputed sample VARIANCE of station transition time, minutes squared. One row per station, n = 400 results per station. Group by station only. Do NOT sum across stations — a summed variance is meaningless."
+        expr: q1.TRANSITION_TIME_VARIANCE
+        data_type: FLOAT
+        access_modifier: public_access
+verified_queries:
+  - name: Which stations have the highest transition time variance, and how many observations does each have?
+    sql: |-
+      SELECT
+        station,
+        ROUND(transition_time_variance, 2) AS var,
+        n_obs
+      FROM
+        q1
+      ORDER BY
+        var DESC
+    question: Which stations have the highest transition time variance, and how many observations does each have?
+    verified_at: 1793849281
+    verified_by: GBALTAZARNARU7
+    use_as_onboarding_question: false

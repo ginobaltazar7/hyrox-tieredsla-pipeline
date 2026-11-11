@@ -6,13 +6,13 @@ A data engineering pipeline demonstrating a **Tiered SLA architecture** applied 
 
 Built **100% natively inside Snowflake** using Snowpark Python Stored Procedures, Pydantic data validation, Snowpatrol Isolation Forest anomaly detection, dbt and MetricFlow, Apache Ossie semantic models, and Neo4j knowledge graphs. The presentation layer is a mobile-first Streamlit app, served from Render, and reads the same verified tables, and does not re-derive them.
 
-> Live app: https://hyrox-tieredsla-pipeline.onrender.com/  verified live 2026-11-07 on a Snowflake trial ending 2026-11-10.
+> Live app: https://hyrox-tieredsla-pipeline.onrender.com/ — verified live 2026-11-07. The Snowflake trial behind it ended around 10 Nov 2026, so the Snowflake-backed app lapses with the account; a Databricks-backed version of the same app is built in the hyrox-databricks-port repo, and the 19 Nov 2026 Cortex demo is a frozen recording, not a live session.
 
 ![App Screenshot](docs/hyrox_render_cover.png?v=2)
 
 ##  Recreate this deployment from scratch
 
-> Each step says what to do and where the detail lives. You can see the commands from [RUNBOOK.MD](RUNBOOK.MD) Or if you just want to rebuild what is running live, follow this list in order. 
+> Each step says what to do and where the detail lives. You can see the commands from [RUNBOOK.md](RUNBOOK.md) Or if you just want to rebuild what is running live, follow this list in order. 
 
 - [ ] **Check your Snowflake account first:** In Snowsight, run `SELECT CURRENT_ORGANIZATION_NAME(), CURRENT_ACCOUNT_NAME(), CURRENT_ROLE();` and confirm they match the account and role you're deploying with, and consistent across Snowsight `.env`, and configs in Render.
 
@@ -20,14 +20,15 @@ Built **100% natively inside Snowflake** using Snowpark Python Stored Procedures
 - [ ] **Build the Snowflake side.** Follow RUNBOOK.md: fetch the Git repo into Snowflake, run the infrastructure setup, then turn on the Task DAG. Then run a quick select on your raw table (in this repo, `HYROX_RAW_SEASON_8`) to confirm it has rows.
 - [ ] **Build the dbt models.** Use dbt Fusion 2.0.8 for the build, and the MetricFlow CLI only for the semantic checks — do not mix them up, or the build will fail with a false error about a missing time spine. Full detail is in RUNBOOK.md.
 - [ ] **Check the counts before you call anything done.** The Q1 table must have 8 rows, the Q2 degradation table 5,000, and the Q2 correlation table 7. Hand SQL, the dbt model and the MetricFlow query must all agree.
-- [ ] **Create the read-only app user.** In Snowflake, create a read-only role and a service user for the app, grant it read access to the three app tables only, and set its RSA public key. Full detail is in `streamlit_app/README.md`.
-- [ ] **Deploy the app on Render (optional).** Create a Web Service from this repo, branch `main`, runtime Python 3, instance type Free. Build command: `pip install -r streamlit_app/requirements.txt`. Start command: `streamlit run streamlit_app/app.py --server.port $PORT --server.address 0.0.0.0`. Then add your 7 Snowflake values as environment variables — the variable *names* are fixed by the app code (`SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PRIVATE_KEY`, `SNOWFLAKE_ROLE`, `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`), plus `PYTHON_VERSION` set to `3.12`.
+- [ ] **Create the Cortex semantic views.** After the dbt build, run `sql/cortex_semantic_views.sql` in Snowflake — the four single-table views the Cortex Analyst demo is built on. Do not use the combined view in `sql/cortex_semantic_views_combined_and_test.sql` for the demo; it is superseded by the split views and kept as reference only. The view DDLs and YAML sources live in `sql/cortex/`.
+- [ ] **Create the read-only app user.** In Snowflake, create a read-only role and a service user for the app, grant it read access to the three app tables only, and set its RSA public key. Generate the key pair first, fill in the placeholder in `sql/streamlit_access.sql`, then run it; full detail is in `streamlit_app/README.md`.
+- [ ] **Deploy the app on Render (optional).** Create a Web Service from this repo, branch `main`, runtime Python 3, instance type Free. Or deploy the Databricks version instead — same `app.py`, Databricks `data.py` (see `streamlit_app/README.md`). Build command: `pip install -r streamlit_app/requirements.txt`. Start command: `streamlit run streamlit_app/app.py --server.port $PORT --server.address 0.0.0.0`. Then add your 7 Snowflake values as environment variables — the variable *names* are fixed by the app code (`SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, `SNOWFLAKE_PRIVATE_KEY`, `SNOWFLAKE_ROLE`, `SNOWFLAKE_WAREHOUSE`, `SNOWFLAKE_DATABASE`, `SNOWFLAKE_SCHEMA`), plus `PYTHON_VERSION` set to `3.12`.
 - [ ] **Check the live page.** Open the Render URL. 
   - "Data source: Snowflake" at the bottom must say, with Sled Pull at 6.70 and the pooled Q2 numbers at n = 5,000, −1.02 / 1.37 / −0.16. 
   - If it says "local CSV preview", it is reading the preview files, not Snowflake. 
   - If it says it could not load the data, check the key pair first — a new private key with an old public key is the usual cause.
 
-> Rebuilding after an expired trial? See [RUNBOOK](RUNBOOK.md) for the full account-level checklist — trial signup, credential handling, and verification.
+> Rebuilding after an expired trial? See [RUNBOOK](RUNBOOK.md) for the full account-level checklist — trial signup, credential handling, verification and Cortex (see `sql/`). 
 
 ## Delivery — Streamlit on Render (live)
 
@@ -37,7 +38,6 @@ The app lives in `streamlit_app/`: Q1 bar chart, Q2 scatter with division filter
 >
 > ![Streamlit app — Q1 variance and Q2 pooled](docs/streamlit-app.png)
 >
-> The Snowflake trial behind the live app expires 10 Nov 2026 — keeping the app alive after that needs a separate account decision, not yet made.
 
 ## Six Sports Analyst Questions (Tiered SLA Framework)
 
@@ -179,7 +179,7 @@ To accommodate the SLA, the architecture splits ingestion and transformation pip
 
 - **Presentation Layer:** Streamlit app in `streamlit_app/`, mobile-first, served from Render with a server-side read-only Snowflake credential (key-pair auth). No viewer login. It reads the Q1 and Q2 tables — it does not recompute them.
 
-- **Semantic & Graph Layer:** dbt semantic models, validated and queried with [MetricFlow](https://docs.getdbt.com/docs/build/build-metrics-intro?version=2) and exported as portable [Apache Ossie](https://github.com/apache/ossie-converters) YAML, and Snowflake-to-Neo4j graph connectors. [Apache Jena](https://jena.apache.org/) for formal ontology or inference is a future roadmap item.
+- **Semantic & Graph Layer:** dbt semantic models, validated and queried with [MetricFlow](https://docs.getdbt.com/docs/build/build-metrics-intro?version=2) and exported as portable [Apache Ossie](https://github.com/apache/ossie-converters) YAML, and Snowflake-to-Neo4j graph connectors. [Apache Jena](https://jena.apache.org/) for formal ontology or inference is a future roadmap item. Separately, the Snowflake Cortex Analyst demo has its own Snowflake-native semantic views in `sql/cortex_semantic_views.sql` (YAML sources in `sql/cortex/`) — a different layer from the dbt/MetricFlow models, not the same definitions in another format.
 
 - **Operations:** Daily pipeline healthcheck. See [RUNBOOK.md](RUNBOOK.md).
 
@@ -201,7 +201,9 @@ Athlete graph: not yet runnable — parked for now, its UNWIND / MERGE body is s
 
 ## Snowflake Cortex Analyst demo — frozen recording, 19 Nov
 
-A separate demo from the Render app: a Cortex Analyst chatbot for my niece Isa, built on four single-table semantic views (`HYROX_Q1_VARIANCE_VIEW`, `HYROX_Q1_AVERAGE_VIEW`, `HYROX_Q2_VIEW`, `HYROX_Q2_CORRELATION_VIEW`). The 19 Nov demo runs from a frozen recording, not a live Snowflake session — the trial expires 10 Nov.
+A separate demo from the Render app: a Cortex Analyst chatbot for my niece Isa, built on four single-table semantic views (`HYROX_Q1_VARIANCE_VIEW`, `HYROX_Q1_AVERAGE_VIEW`, `HYROX_Q2_VIEW`, `HYROX_Q2_CORRELATION_VIEW`). The 19 Nov 2026 demo is a frozen recording, not a live Snowflake session.
+
+The four split views are the demo path and their DDL lives in `sql/cortex_semantic_views.sql`; the YAML sources are in `sql/cortex/`. The combined four-table view (`HYROX_Q1_Q2_SEMANTIC_VIEW`) is superseded by the split views — it is kept as reference in `sql/cortex_semantic_views_combined_and_test.sql`, so verify it against a live GET_DDL before relying on it. Note the two semantic layers in this repo are different things: `dbt_project/models/semantic_models.yml` is the dbt/MetricFlow layer (portable, exported as Ossie), while the `sql/` files are the Snowflake-native Cortex layer — don't mix them up. Cortex Analyst also needs the database role granted: `GRANT DATABASE ROLE SNOWFLAKE.CORTEX_ANALYST_USER TO ROLE ACCOUNTADMIN;`
 
 ![Q1 variance, all stations](docs/cortex_Q1_variance_all_stations.png)
 ![Q1 average station time](docs/cortex_Q1_average_station_time.png)

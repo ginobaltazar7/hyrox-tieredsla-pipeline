@@ -1,0 +1,27 @@
+version: 1
+artifacts:
+  - path: Q1_TEST_SEMANTIC_VIEWv1.sv.yaml
+    type: semantic_view
+    targets:
+      default:
+        object: SPORTS_ANALYTICS_DB.RAW_BRONZE.Q1_TEST_SEMANTIC_VIEW
+  - path: HYROX_Q1_AVERAGE_VIEW.sv.yaml
+    type: semantic_view
+    targets:
+      default:
+        object: SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_Q1_AVERAGE_VIEW
+  - path: HYROX_Q1_VARIANCE_VIEW.sv.yaml
+    type: semantic_view
+    targets:
+      default:
+        object: SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_Q1_VARIANCE_VIEW
+  - path: HYROX_Q2_VIEW.sv.yaml
+    type: semantic_view
+    targets:
+      default:
+        object: SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_Q2_VIEW
+  - path: HYROX_Q2_CORRELATION_VIEW.sv.yaml
+    type: semantic_view
+    targets:
+      default:
+        object: SPORTS_ANALYTICS_DB.RAW_BRONZE.HYROX_Q2_CORRELATION_VIEW

@@ -9,10 +9,12 @@ A mobile first web page for the analyst questions in the main README:
 | Q2 By division | `q2_deviation_correlation` (7 rows) | Table, shown as is |
 | Q5 Registration audit | none | Data notes panel |
 
+The live deploy read Snowflake on a trial that ended around 10 Nov 2026. To run this app now: either a fresh Snowflake trial or paid account (follow RUNBOOK.md — the access setup is in `sql/streamlit_access.sql`), or the Databricks version, which replaces `data.py` only (see the hyrox-databricks-port repo).
+
 ## Files
 
 - `app.py`: page layout, charts and footnotes. Only works with pandas DataFrames.
-- `data.py`: the only file that talks to Snowflake. A Databricks version would mainly replace this file.
+- `data.py`: the only file that talks to Snowflake. A Databricks version of this file is built (hyrox-databricks-port repo, `streamlit_app/data.py`); `app.py` is unchanged between the two.
 - `requirements.txt`: Python dependencies.
 - `.streamlit/config.toml`: theme and settings.
 
@@ -29,6 +31,8 @@ Set these on Render (never in code or the repo):
 | `SNOWFLAKE_WAREHOUSE` | `COMPUTE_WH` |
 | `SNOWFLAKE_DATABASE` | `SPORTS_ANALYTICS_DB` |
 | `SNOWFLAKE_SCHEMA` | `RAW_BRONZE` |
+
+The schema is `RAW_BRONZE` because the gold-tier models materialise there — see the main README, Schema placement — not because the app reads raw data.
 
 The key is unencrypted (generated with `-nocrypt`), so no passphrase is needed. If the key is pasted with literal `\n` instead of line breaks, the app restores them.
 
@@ -67,6 +71,6 @@ In preview mode the correlation table is rebuilt from the CSV with the same logi
 - **Division filter:** each division is shown on its own by default (Open first). The pooled view is labelled as pooled.
 - **Small groups:** Elite and Elite Doubles (n = 29) show a warning.
 - **Errors:** if Snowflake is unreachable, visitors see a short message and the technical detail sits in a collapsed box.
-- **Grants:** dbt table models are recreated on each run, which drops SELECT grants. Keep `grants={'select': ['HYROX_APP_READER']}` on the three models so the app keeps access.
+- **Grants:** the account-side half of this lives in `sql/streamlit_access.sql` — it creates the role, the service user, and the grants. The dbt side is the keep-alive half: dbt table models are recreated on each run, which drops SELECT grants. Keep `grants={'select': ['HYROX_APP_READER']}` on the three models so the app keeps access.
 
 <sub>Parts of this project, including documentation and analysis, were developed with assistance from Naru, an AI assistant.</sub>

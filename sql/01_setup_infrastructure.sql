@@ -1,5 +1,6 @@
 -- Description: Provisions database tiers, external network rules for API access, and the serverless compute pool required to host containerized workloads natively inside Snowflake.
 USE ROLE ACCOUNTADMIN;
+CREATE WAREHOUSE IF NOT EXISTS COMPUTE_WH;
 CREATE DATABASE IF NOT EXISTS SPORTS_ANALYTICS_DB;
 CREATE SCHEMA IF NOT EXISTS SPORTS_ANALYTICS_DB.RAW_BRONZE;
 CREATE SCHEMA IF NOT EXISTS SPORTS_ANALYTICS_DB.SILVER;

@@ -26,7 +26,21 @@ The RUNBOOK covers *how to rebuild*; this file covers *how not to break things*.
 
 - Regenerate only from dbt semantic models: `dbt parse && ossie-dbt msi-to-ossie -i target/semantic_manifest.json -o ossie/semantic_model.yaml`
 
-- Semantic models live in `dbt_project/models/semantic_models/` and are defined on gold marts.
+- Semantic models live in `dbt_project/models/semantic_models.yml` and are defined on gold marts.
+
+## dbt toolchain (the Fusion / venv trap — do not re-learn this)
+
+- dbt Fusion 2.0.8 is a standalone binary (`~/.local/bin/dbt`), not pipx/uv-managed. Stay on 2.0.8 mid-proof.
+
+- The MetricFlow CLI (`mf` 0.15.0) lives in the venv `~/.venvs/mf`. Installing it pulls dbt-core 1.12.6 as a dependency.
+
+- `dbt parse/run/build` OUTSIDE the mf venv; `mf` commands INSIDE only. Activating the venv shadows Fusion: `dbt parse` inside it runs 1.12.6 and fails with a FALSE time-spine error ("semantic layer requires a time spine model with granularity DAY or smaller").
+
+- Never add a time-spine model to fix a Fusion parse. Q1's metric has no time dimension and Fusion parses fine without one.
+
+- All `dbt sl` commands are the dbt-Cloud platform route and fail locally with dbt1001 (no `dbt_cloud.yaml`). Local semantic-layer proof is `mf validate-configs` / `mf list metrics` / `mf query`.
+
+- Project venvs live in `~/.venvs/<name>`, never inside the repo.
 
 ## Account references (never hardcode)
 
@@ -54,12 +68,33 @@ A column addition/removal/rename must land in ALL of:
 
 ## Dashboards
 
-- Metabase IS the frontend: it runs as its own SPCS service (`sql/deploy_metabase.sql`, public :3000); charts are hand-built in the Metabase UI against `GOLD_MARKETING.pacing_obt`. No custom frontend, no Render, no app.jsx.
+- Streamlit IS the frontend: the app in `streamlit_app/` (mobile-first) runs on Render — https://hyrox-tieredsla-pipeline.onrender.com/ — verified live 2026-11-07. It reads the Q1/Q2 tables with a server-side read-only credential (key-pair auth, role `HYROX_APP_READER`); it never recomputes them. No viewer login.
 
-- The Metabase app database (H2) does not survive an account rebuild. Dashboards are recreated by hand from the README question→chart map (Q1–Q5; Q6 excluded, no Season 7 data).
+- Local preview mode (`HYROX_LOCAL_DATA_DIR`) reads the preview CSVs instead of Snowflake — verify charts there before a live deploy.
+
+- Python 3.11/3.12 only (Render uses 3.12). Altair 5 fails on Python 3.14 — keep `altair>=5,<6` and do not edit `requirements.txt` for this.
+
+- `SNOWFLAKE_SCHEMA=RAW_BRONZE` — the gold models materialise there, not in GOLD_MARKETING.
+
+- Metabase is no longer the frontend. `sql/deploy_metabase.sql` is legacy — do not revive it as the frontend.
+
+- A Databricks-backed version of the same app exists in the `hyrox-databricks-port` repo (same `app.py`, Databricks `data.py`).
+
+## Cortex Analyst demo (frozen — do not rebuild before 19 Nov)
+
+- The demo runs from a frozen recording, not a live Snowflake session (trial ended ~10 Nov 2026). Four single-table semantic views are the demo path: `HYROX_Q1_VARIANCE_VIEW`, `HYROX_Q1_AVERAGE_VIEW`, `HYROX_Q2_VIEW`, `HYROX_Q2_CORRELATION_VIEW`.
+
+- Source DDL: `sql/cortex_semantic_views.sql` (split views, full DDL from GET_DDL, sets its own `USE` context). `AS <sql_expr>` is required for every FACTS / DIMENSIONS / METRICS entry.
+
+- `sql/cortex_semantic_views_combined_and_test.sql` is a superseded reference, not the demo path, so verify it against a live GET_DDL before relying on it; do not recreate from it; re-pull GET_DDL instead.
+
+- The YAMLs in `sql/cortex/` are the view definitions as stored in Snowflake. Do not hand-edit them. `cortex-project.yaml` lists only 5 artifacts (it omits the combined view and Q1_TEST) — the DDL is authoritative, not the manifest.
+
+- The Q1_TEST YAMLs carry a `verified_queries` block (verified question + SQL, stamped `verified_at` / `verified_by`) — ground truth for Cortex Analyst. Keep it.
 
 ## Secrets
 
 - Never commit `.env`. Credentials resolve from environment variables at runtime only.
 
 - Never paste account identifiers, usernames, or passwords into issues, PRs, or docs.
+
