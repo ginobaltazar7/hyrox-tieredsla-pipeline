@@ -68,9 +68,9 @@ A column addition/removal/rename must land in ALL of:
 
 ## Dashboards
 
-- Streamlit IS the frontend: the app in `streamlit_app/` (mobile-first) runs on Render — https://hyrox-tieredsla-pipeline.onrender.com/ — verified live 2026-11-07. It reads the Q1/Q2 tables with a server-side read-only credential (key-pair auth, role `HYROX_APP_READER`); it never recomputes them. No viewer login.
+- Streamlit IS the frontend: the app in `streamlit_app/` (mobile-first) runs on Render — https://hyrox-tieredsla-pipeline.onrender.com/. It reads the Q1/Q2 tables from the CSVs bundled in `streamlit_app/data/` (frozen 5,000-row sample); it never recomputes them. It queries Snowflake with a server-side read-only credential (key-pair auth, role `HYROX_APP_READER`) only when the bundled CSVs are absent and the Snowflake env vars are set. No viewer login.
 
-- Local preview mode (`HYROX_LOCAL_DATA_DIR`) reads the preview CSVs instead of Snowflake — verify charts there before a live deploy.
+- Local preview: `HYROX_LOCAL_DATA_DIR` overrides the bundled folder; the bundled `streamlit_app/data/` CSVs are the default. Verify charts there before a live deploy.
 
 - Python 3.11/3.12 only (Render uses 3.12). Altair 5 fails on Python 3.14 — keep `altair>=5,<6` and do not edit `requirements.txt` for this.
 

@@ -64,7 +64,7 @@ SNOWFLAKE_PASSWORD=<password>
 
     ```
     Run the `sed` command in the dev container (GNU sed). On macOS, `sed -i` needs a backup suffix, e.g. `sed -i ''`.
-11. **Presentation — Streamlit on Render.** The app lives in streamlit_app/ and runs on Render — see the README, "Recreate this deployment from scratch". 
+11. **Presentation — Streamlit on Render.** The app lives in streamlit_app/ and runs on Render — see the README, "Recreate this deployment from scratch". It serves the frozen sample from the CSVs bundled in `streamlit_app/data/`, so a trial expiry no longer takes the app down; it queries Snowflake only when the bundled CSVs are absent and the Snowflake env vars are set.
 
 ## What this pipeline covers
 - **Identity has two keys:** Every result has its own `result_id`, and every athlete gets an `athlete_id` built from their details. That's how we tell results and people apart.

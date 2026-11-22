@@ -55,8 +55,18 @@ class DataSourceError(RuntimeError):
 # ---------------------------------------------------------------- helpers
 
 def _local_dir():
+    """Local CSV folder, if one is available.
+
+    HYROX_LOCAL_DATA_DIR wins when set. Otherwise the app uses the frozen
+    data/ folder bundled next to this file, when it exists — the app then
+    serves the frozen tables without touching Snowflake at all. Snowflake
+    is used only when neither is available.
+    """
     path = os.getenv("HYROX_LOCAL_DATA_DIR")
-    return Path(path) if path else None
+    if path:
+        return Path(path)
+    bundled = Path(__file__).resolve().parent / "data"
+    return bundled if bundled.is_dir() else None
 
 
 def missing_env_vars():
