@@ -293,5 +293,6 @@ with st.expander("About the sample", expanded=False):
 
 footnote([
     f"Data source: {data.data_source_label()} — public HYROX results via pyrox-client, 5,000-row Season 8 sample. Refreshed at most once an hour.",
-    'Code and full data notes: <a href="https://github.com/ginobaltazar7/hyrox-tieredsla-pipeline" target="_blank">github.com/ginobaltazar7/hyrox-tieredsla-pipeline</a>',
+    'Unofficial demo — not affiliated with, endorsed, or sponsored by HYROX. Data as-is; see About the sample for the source.',
+    'Code and full data notes: <a href="https://github.com/ginobaltazar7/hyrox-tieredsla-pipeline" target="_blank">github.com/ginobaltazar7/hyrox-tieredsla-pipeline</a>.',
 ])

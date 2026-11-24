@@ -226,4 +226,8 @@ This repo uses a 5,000-row sample from the season-8 file, for learning and for d
 
 The full season-8 file is about 715,000 rows. The 5,000-row sample is deliberate: the ingest script caps the load at 5,000 rows by default, so the sample is what the models and the app were verified against.
 
+## Disclaimer
+
+This project is unofficial and non-commercial, not affiliated with, endorsed, or sponsored by HYROX. Data is provided as-is with no warranty of accuracy or completeness. HYROX is a trademark of its owner. 
+
 <sub>Parts of this project, including documentation and analysis, were developed with assistance from Naru, an AI assistant.</sub>
